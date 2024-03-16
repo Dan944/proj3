@@ -1,2 +1,4 @@
-user,info,rating,win,loses,quiet,block,online
-shuai,,0,0,0,0,11;22,1
+user,password,id,info,rating,win,loses,quiet,block
+a,a,1,,0,0,0,0,11;22
+b,b,2,,0,0,0,0,11;22
+c,c,3,,0,0,0,0,11;22
