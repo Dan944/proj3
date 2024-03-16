@@ -33,6 +33,12 @@ void print_fd_set(const fd_set *set, int ccc) {
         }
     }
 }
+
+void writeLine(int socketId, const string line) {
+    string temp = line + '\n';
+    write(socketId, temp.c_str(), temp.size());
+}
+
 struct User {
     string username; 
     string password;
@@ -73,6 +79,17 @@ struct System {
             result.push_back(u->username);
         }
         return result;
+    }
+	User* findUser(const string username) {
+        for (User *u : allUsers) {
+			cout << "data:" <<u->username << "|| this:" << username <<endl;
+			cout << "data:" <<u->username.length() << "|| this:" << username.length() <<endl;
+            if (u->username == username) {
+				cout << "finded\n";
+                return u;
+            }
+        }
+        return nullptr;
     }
 	void init() {
 		System::load_user();
@@ -124,6 +141,7 @@ struct System {
 				cout << num << ",";
 			}
 			cout << endl;
+			allUsers.push_back(user);
 		}
 		file.close();
 	}
@@ -133,8 +151,6 @@ System sys;
 
 
 void login(int rec_sock) {
-	char user[100] = "dandan";
-	char password[100] = "dandan";
     char hello[1024];
 	char buf[100];
 	int num;
@@ -148,15 +164,37 @@ void login(int rec_sock) {
 	if (write(rec_sock, hello, strlen(hello)) < 0) {
 		perror("hello error");
 	}
-	strcpy(buf,"username:");
-	write(rec_sock, buf, strlen(buf));
-	printf("buf1:[%s]\n",buf);
-	num = read(rec_sock, buf, 100);
-	if (num > 0) {
-		buf[num] = '\0'; // Null-terminate the string
+	while(1) {
+		strcpy(buf,"username(guest):");
+		write(rec_sock, buf, strlen(buf));
+		num = read(rec_sock, buf, 100);
+		if (num > 0) {
+			buf[num-2] = '\0';
+		}
+		if (strncmp(buf,"guest",5) == 0){
+			writeLine(rec_sock, "guest mode");
+			break;
+		}
+		
+		string username(buf);
+		strcpy(buf,"password:");
+		write(rec_sock, buf, strlen(buf));
+		num = read(rec_sock, buf, 100);
+		if (num > 0) {
+			buf[num-2] = '\0';
+		}
+		string password(buf);
+		User *user = sys.findUser(username);
+		cout<< username <<endl;
+		cout<< password <<endl;
+		if (user == nullptr) {
+			writeLine(rec_sock, "Incorrect username");
+		} else if (user->password==password){
+			break;
+		} else {
+			writeLine(rec_sock, "Incorrect password");
+		}
 	}
-	printf("buf2:[%s]\n",buf);
-	write(rec_sock, buf, strlen(buf));
 }
 
 char* print_hello() {
@@ -314,7 +352,7 @@ int main(int argc, char * argv[])
 		exit(0);
 	}
 	sys.init();
-	// start_server(argv[1]);
+	start_server(argv[1]);
 }
 
 
