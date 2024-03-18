@@ -127,20 +127,20 @@ struct System {
 			while (std::getline(blockStream, blockId, ';')) {
 				user->blocked_ids.push_back(std::stoi(blockId));
 			}
-			cout << "*********************************************" <<endl;
-			cout << "username:" << user->username<<endl;
-			cout << "password:" << user->password<<endl;
-			cout << "id:" << user->id<<endl;
-			cout << "info:" << user->information<<endl;
-			cout << "rating:" << user->rating<<endl;
-			cout << "win:" << user->win<<endl;
-			cout << "loss:" << user->loss<<endl;
-			cout << "quiet:" << user->quiet<<endl;
-			cout << "block:";
-			for (const auto& num : user->blocked_ids) {
-				cout << num << ",";
-			}
-			cout << endl;
+			// cout << "*********************************************" <<endl;
+			// cout << "username:" << user->username<<endl;
+			// cout << "password:" << user->password<<endl;
+			// cout << "id:" << user->id<<endl;
+			// cout << "info:" << user->information<<endl;
+			// cout << "rating:" << user->rating<<endl;
+			// cout << "win:" << user->win<<endl;
+			// cout << "loss:" << user->loss<<endl;
+			// cout << "quiet:" << user->quiet<<endl;
+			// cout << "block:";
+			// for (const auto& num : user->blocked_ids) {
+			// 	cout << num << ",";
+			// }
+			// cout << endl;
 			allUsers.push_back(user);
 		}
 		file.close();
@@ -284,7 +284,7 @@ void start_server(char* port) {
 			}
 			printf("after ip = %s, port = %d\n", inet_ntoa(recaddr.sin_addr), htons(recaddr.sin_port));
             printf("rec_sock[%d]\n", rec_sock);
-			login(rec_sock);
+			// login(rec_sock);
             // char* buf = print_hello();
             // printf("%s\n",buf);
             // if (write(rec_sock, buf, strlen(buf)) < 0) {
@@ -314,6 +314,7 @@ void start_server(char* port) {
 		while (itr != sock_vector.end()) {
 			int num, fd;
 			fd = *itr;
+			printf("here is me\n");
 			if (FD_ISSET(fd, &rset)) {
 				num = read(fd, buf, 100);
 				if (num == 0) {
