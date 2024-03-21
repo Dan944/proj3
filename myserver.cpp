@@ -87,7 +87,7 @@ struct User {
 		cmd = 0;
     }
 	void logout() {
-		this->login = false;
+		login = false;
 		//game-related should be dealed here
 	}
 	void writef(string buf) {
@@ -195,13 +195,18 @@ void login(int rec_sock, string username, string password) {
 		write(rec_sock, buf, strlen(buf));
 	} else if (user->password==password){
 		if (user->login==true) {
-			states[user->sockId]=-1
+			states[user->sockId]=-1;
+			char q[100];
+			strcpy(q,"sorry, your account has been login in other place, enter any button to quit\n");
+			write(user->sockId,q,strlen(q));
+			user->sockId = rec_sock;
+			states[rec_sock] = 3;
+			user->cmd = 0;
 		} else {
-			user->login == true;
+			user->login = true;
 			user->sockId = rec_sock;
 			states[rec_sock] = 3;
 		}
-
 	} else {
 		writeLine(rec_sock, "Incorrect password");
 		cout << "user.password = "<<user->password<<endl;
@@ -300,18 +305,14 @@ void start_server(char* port) {
 			if (rec_sock > maxfd) maxfd = rec_sock;
 		}
 
-		// vector<int>::iterator itr = sock_vector.begin();
 		auto itr = sock_vector.begin(); 
 		while (itr != sock_vector.end()) {
 			int num, fd;
 			fd = *itr;
-			// if (states[fd] == 0) {
-			// 	login(fd);
-			// }
-			// printf("here is me fd[%i]\n",fd);
 			if (FD_ISSET(fd, &rset)) {
 				memset(buf, 0, sizeof(buf));
 				num = read(fd, buf, 100);
+				printf("current fd:[%i]\n",fd);
 				if (num == 0) {
 					/* client exits */
 					close(fd);
@@ -319,13 +320,16 @@ void start_server(char* port) {
 					itr = sock_vector.erase(itr);
 					continue;
 				} //quit
-				else if (states[fd]==-1 || strncmp(buf, "quit", 4) == 0) {
-					printf("gogoin: %s\n",buf);
-					printf("Client sent 'quit'. Closing connection.\n");
+				if (states[fd]==-1 || strncmp(buf, "quit", 4) == 0) {
+					// printf("gogoin: %s\n",buf);
+					// printf("Client sent 'quit'. Closing connection.\n");
+					printf("close socket [%d]\n",fd);
 					close(fd);
 					FD_CLR(fd, &allset);
 					User *user = sys.findUserFd(fd);
-					user->logout();
+					if (user != nullptr) {
+						user->logout();
+					}
 					states[fd] = 0;
 					itr = sock_vector.erase(itr);
 					continue;
@@ -343,8 +347,6 @@ void start_server(char* port) {
 				} //login-password 
 				else if (states[fd] == 1) {
 					guest_password[fd] = buf;
-					cout << "guest_username[fd]:" << guest_username[fd] <<endl;
-					cout << "guest_password[fd]"<< guest_password[fd]<<endl;
 					login(fd,guest_username[fd],guest_password[fd]);
 					// states[fd]=3;
 				}
