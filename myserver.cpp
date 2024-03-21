@@ -14,8 +14,15 @@
 #include <cstring>
 #include <fstream>
 #include <sstream>
+#include <locale>
+#include <cctype>
 
 using namespace std;
+vector<int> states(100, 0);
+// char* guest_username[100];
+// char* guest_password[100];
+vector<string> guest_username(100);
+vector<string> guest_password(100);
 
 void sig_chld(int signo)
 {
@@ -32,6 +39,12 @@ void print_fd_set(const fd_set *set, int ccc) {
             printf("FD %d is set\n", i);
         }
     }
+}
+
+static inline void rtrim(std::string &s) {
+    s.erase(std::find_if(s.rbegin(), s.rend(), [](unsigned char ch) {
+        return !std::isspace(ch);
+    }).base(), s.end());
 }
 
 void writeLine(int socketId, const string line) {
@@ -53,6 +66,7 @@ struct User {
 	int win;
 	int loss;
 	int id;
+	int cmd;
 
     User(string username, string password) {
         this->username = username;
@@ -61,6 +75,7 @@ struct User {
         quiet = false;
         login = false;
         sockId = -1;
+		cmd = 0 ;
     }
 	User() {
         this->username = username;
@@ -69,7 +84,19 @@ struct User {
         quiet = false;
         login = false;
         sockId = -1;
+		cmd = 0;
     }
+	void logout() {
+		this->login = false;
+		//game-related should be dealed here
+	}
+	void writef(string buf) {
+		char outbuf[1024];
+		sprintf(outbuf, "<%s: %i> %s", username.c_str(), cmd, buf.c_str());
+		cmd++;
+		// Ensure num is the length of outbuf, not the result of the read call
+		write(sockId, outbuf, strlen(outbuf)); 
+	}
 };
 struct System {
     vector<User*> allUsers;
@@ -80,12 +107,18 @@ struct System {
         }
         return result;
     }
-	User* findUser(const string username) {
+	User* findUser(string username) {
         for (User *u : allUsers) {
-			cout << "data:" <<u->username << "|| this:" << username <<endl;
-			cout << "data:" <<u->username.length() << "|| this:" << username.length() <<endl;
             if (u->username == username) {
 				cout << "finded\n";
+                return u;
+            }
+        }
+        return nullptr;
+    }
+	User* findUserFd(const int fd) {
+        for (User *u : allUsers) {
+            if (u->sockId == fd) {
                 return u;
             }
         }
@@ -149,11 +182,40 @@ struct System {
 System sys;
 
 
+void login(int rec_sock, string username, string password) {
+	char buf[1024] = "username(guest):";
+	rtrim(username);
+	rtrim(password);
+	// string dusername = username.substr(0, username.length() - 2);
+	// string dpassword = password.substr(0, password.length() - 2);
+	User *user = sys.findUser(username);
+	if (user == nullptr) {
+		writeLine(rec_sock, "Incorrect username");
+		states[rec_sock] = 0;
+		write(rec_sock, buf, strlen(buf));
+	} else if (user->password==password){
+		if (user->login==true) {
+			states[user->sockId]=-1
+		} else {
+			user->login == true;
+			user->sockId = rec_sock;
+			states[rec_sock] = 3;
+		}
 
-void login(int rec_sock) {
+	} else {
+		writeLine(rec_sock, "Incorrect password");
+		cout << "user.password = "<<user->password<<endl;
+		cout << "password = "<<password<<endl;
+		states[rec_sock] = 0;
+		write(rec_sock, buf, strlen(buf));
+	}
+}
+
+void print_hello(int rec_sock) {
+    // Make the buffer static so its lifetime extends beyond the function call.
+    // Note: This makes the function non-reentrant and not thread-safe.
     char hello[1024];
-	char buf[100];
-	int num;
+	char buf[1024];
     sprintf(hello, 
         "%s%s%s%s%s",
         "********************************************************************\n",
@@ -164,51 +226,8 @@ void login(int rec_sock) {
 	if (write(rec_sock, hello, strlen(hello)) < 0) {
 		perror("hello error");
 	}
-	while(1) {
-		strcpy(buf,"username(guest):");
-		write(rec_sock, buf, strlen(buf));
-		num = read(rec_sock, buf, 100);
-		if (num > 0) {
-			buf[num-2] = '\0';
-		}
-		if (strncmp(buf,"guest",5) == 0){
-			writeLine(rec_sock, "guest mode");
-			break;
-		}
-		
-		string username(buf);
-		strcpy(buf,"password:");
-		write(rec_sock, buf, strlen(buf));
-		num = read(rec_sock, buf, 100);
-		if (num > 0) {
-			buf[num-2] = '\0';
-		}
-		string password(buf);
-		User *user = sys.findUser(username);
-		cout<< username <<endl;
-		cout<< password <<endl;
-		if (user == nullptr) {
-			writeLine(rec_sock, "Incorrect username");
-		} else if (user->password==password){
-			break;
-		} else {
-			writeLine(rec_sock, "Incorrect password");
-		}
-	}
-}
-
-char* print_hello() {
-    // Make the buffer static so its lifetime extends beyond the function call.
-    // Note: This makes the function non-reentrant and not thread-safe.
-    static char buf[1024];
-    sprintf(buf, 
-        "%s%s%s%s%s",
-        "********************************************************************\n",
-        "You are attempting to log into online tic-tac-toe Server.\n",
-        "Please be advised by continuing that you agree to the terms of the\n",
-        "Computer Access and Usage Policy of online tic-tac-toe Server.\n\n",
-        "********************************************************************\n\n\n");
-    return buf;
+	strcpy(buf,"username(guest):");
+	write(rec_sock, buf, strlen(buf));
 }
 
 void start_server(char* port) {
@@ -218,6 +237,7 @@ void start_server(char* port) {
 	struct sockaddr_in addr, recaddr;
 	struct sigaction abc;
 	char buf[100];
+	char outbuf[100];
 	fd_set allset, rset;
 	int maxfd;
 
@@ -227,13 +247,10 @@ void start_server(char* port) {
 
 	sigaction(SIGCHLD, &abc, NULL);
 
-
-
 	if ((sockfd = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
 		perror(": Can't get socket");
 		exit(1);
 	}
-    printf("init sockfd[%d]\n",sockfd);
 
 	addr.sin_addr.s_addr = INADDR_ANY;
 	addr.sin_family = AF_INET;
@@ -243,17 +260,12 @@ void start_server(char* port) {
 		perror(": bind");
 		exit(1);
 	}
-	printf("bind sockfd[%d]\n",sockfd);
-
 
 	len = sizeof(addr);
 	if (getsockname(sockfd, (struct sockaddr *)&addr, &len) < 0) {
 		perror(": can't get name");
 		_exit(1);
 	}
-	printf("getsockname sockfd[%d]\n",sockfd);
-
-	printf("ip = %s, port = %d\n", inet_ntoa(addr.sin_addr), htons(addr.sin_port));
 
 	if (listen(sockfd, 5) < 0) {
 		perror(": bind");
@@ -272,8 +284,8 @@ void start_server(char* port) {
 		// printf("FD_ISSET[%d]\n",FD_ISSET(sockfd, &rset));
 		if (FD_ISSET(sockfd, &rset)) {
 			/* somebody tries to connect */
-			printf("I am ISSET before accept\n");
-			printf("before ip = %s, port = %d\n", inet_ntoa(recaddr.sin_addr), htons(recaddr.sin_port));
+			// printf("I am ISSET before accept\n");
+			// printf("before ip = %s, port = %d\n", inet_ntoa(recaddr.sin_addr), htons(recaddr.sin_port));
 			if ((rec_sock = accept(sockfd, (struct sockaddr *)(&recaddr), &len)) < 0) {
 				if (errno == EINTR)
 					continue;
@@ -282,28 +294,7 @@ void start_server(char* port) {
 					exit(1);
 				}
 			}
-			printf("after ip = %s, port = %d\n", inet_ntoa(recaddr.sin_addr), htons(recaddr.sin_port));
-            printf("rec_sock[%d]\n", rec_sock);
-			// login(rec_sock);
-            // char* buf = print_hello();
-            // printf("%s\n",buf);
-            // if (write(rec_sock, buf, strlen(buf)) < 0) {
-            //     perror("hello error");
-            // }
-            
-
-			/*
-			if (rec_sock < 0) {
-				perror(": accept");
-				exit(1);
-			}
-			*/
-
-			/* print the remote socket information */
-
-			printf("remote machine = %s, port = %d.\n",
-					inet_ntoa(recaddr.sin_addr), ntohs(recaddr.sin_port)); 
-
+			print_hello(rec_sock);
 			sock_vector.push_back(rec_sock);
 			FD_SET(rec_sock, &allset);
 			if (rec_sock > maxfd) maxfd = rec_sock;
@@ -314,8 +305,12 @@ void start_server(char* port) {
 		while (itr != sock_vector.end()) {
 			int num, fd;
 			fd = *itr;
-			printf("here is me\n");
+			// if (states[fd] == 0) {
+			// 	login(fd);
+			// }
+			// printf("here is me fd[%i]\n",fd);
 			if (FD_ISSET(fd, &rset)) {
+				memset(buf, 0, sizeof(buf));
 				num = read(fd, buf, 100);
 				if (num == 0) {
 					/* client exits */
@@ -323,16 +318,47 @@ void start_server(char* port) {
 					FD_CLR(fd, &allset);
 					itr = sock_vector.erase(itr);
 					continue;
-				} else {
-					write(fd, buf, num);
-					if (strncmp(buf, "quit", 4) == 0) {
-						printf("gogoin: %s\n",buf);
-						printf("Client sent 'quit'. Closing connection.\n");
-						close(rec_sock);
-						FD_CLR(fd, &allset);
-						itr = sock_vector.erase(itr);
-						continue;
+				} //quit
+				else if (states[fd]==-1 || strncmp(buf, "quit", 4) == 0) {
+					printf("gogoin: %s\n",buf);
+					printf("Client sent 'quit'. Closing connection.\n");
+					close(fd);
+					FD_CLR(fd, &allset);
+					User *user = sys.findUserFd(fd);
+					user->logout();
+					states[fd] = 0;
+					itr = sock_vector.erase(itr);
+					continue;
+				} // login-username
+				else if (states[fd] == 0) {
+					if (strncmp(buf,"guest",5) == 0){
+						writeLine(fd, "guest mode");
+						states[fd] = 2;
 					}
+					else {
+						guest_username[fd] = buf;
+						write(fd, "password:", strlen("password:"));
+						states[fd] = 1;
+					}
+				} //login-password 
+				else if (states[fd] == 1) {
+					guest_password[fd] = buf;
+					cout << "guest_username[fd]:" << guest_username[fd] <<endl;
+					cout << "guest_password[fd]"<< guest_password[fd]<<endl;
+					login(fd,guest_username[fd],guest_password[fd]);
+					// states[fd]=3;
+				}
+				if (states[fd]>=3){
+					User *user = sys.findUserFd(fd);
+					user->writef("");
+					// if (user != nullptr) {
+					// 	sprintf(outbuf, "<%s: %i> ", user->username.c_str(), user->cmd);
+					// 	user->cmd++;
+					// 	// Ensure num is the length of outbuf, not the result of the read call
+					// 	write(fd, outbuf, strlen(outbuf)); 
+					// } else {
+					// 	printf("Error: User not found for fd: %d\n", fd);
+					// }
 				} 
 			}
 			++itr;
