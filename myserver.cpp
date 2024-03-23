@@ -76,6 +76,10 @@ struct User {
         login = false;
         sockId = -1;
 		cmd = 0 ;
+		win = 0;
+		loss = 0;
+		rating = 0;
+
     }
 	User() {
         this->username = username;
@@ -85,6 +89,9 @@ struct User {
         login = false;
         sockId = -1;
 		cmd = 0;
+		win = 0;
+		loss = 0;
+		rating = 0;
     }
 	void logout() {
 		login = false;
@@ -100,6 +107,7 @@ struct User {
 };
 struct System {
     vector<User*> allUsers;
+	vector<User*> onlineUsers;
 	vector<string> getAllUsers() {
         vector<string> result;
         for (User *u : allUsers) {
@@ -127,7 +135,15 @@ struct System {
 	void init() {
 		System::load_user();
 	}
-	void who() {	
+	void onlineUpdate(){
+		onlineUsers.clear();
+		for (User* u : allUsers) {
+			if (u->login) { // If the user is marked as online
+				onlineUsers.push_back(u);
+			}
+		}
+	}
+	void who() {
 	}
 	void load_user() {
 		std::string filePath = "data/user"; // Adjust the path as necessary
@@ -177,6 +193,25 @@ struct System {
 			allUsers.push_back(user);
 		}
 		file.close();
+	}
+	void regist(string username, string password) {
+		User *user = new User(username, password);
+		for (int i=0; i<=1024; i++){
+			bool ava = true;
+			for (User *u : allUsers) {
+				if (u->id == i) {
+					ava = false;
+				}
+			}
+			if (ava) {
+				user->id = i;
+				break;
+			}
+		}
+		allUsers.push_back(user);
+		System::save();
+	}
+	void save(){
 	}
 };
 System sys;
@@ -349,6 +384,20 @@ void start_server(char* port) {
 					guest_password[fd] = buf;
 					login(fd,guest_username[fd],guest_password[fd]);
 					// states[fd]=3;
+				} //register
+				else if (states[fd] == 2) {
+					
+				} //who
+				else if (states[fd] >= 3 && strncmp(buf, "who", 3) == 0) {
+					sys.onlineUpdate();
+					char out1[100];
+					sprintf(out1,"Total %i user(s) online:\n", sys.onlineUsers.size());
+					string out2;
+					for (User* u : sys.onlineUsers) {
+						out2 += u->username;
+					}
+					write(fd, out1, strlen(out1));
+					writeLine(fd, out2);
 				}
 				if (states[fd]>=3){
 					User *user = sys.findUserFd(fd);
@@ -382,6 +431,8 @@ int main(int argc, char * argv[])
 	}
 	sys.init();
 	start_server(argv[1]);
+	// int a;
+	// printf("%i\n",a);
 }
 
 
