@@ -95,6 +95,8 @@ struct User {
     }
 	void logout() {
 		login = false;
+		cmd = 0;
+		sockId = -1;
 		//game-related should be dealed here
 	}
 	void writef(string buf) {
@@ -143,7 +145,17 @@ struct System {
 			}
 		}
 	}
-	void who() {
+	void who(int fd) {
+		onlineUpdate();
+		char out1[100];
+		sprintf(out1,"Total %i user(s) online:\n", onlineUsers.size());
+		string out2;
+		for (User* u : onlineUsers) {
+			out2 += u->username;
+			out2 += " ";
+		}
+		write(fd, out1, strlen(out1));
+		writeLine(fd, out2);
 	}
 	void load_user() {
 		std::string filePath = "data/user"; // Adjust the path as necessary
@@ -350,8 +362,14 @@ void start_server(char* port) {
 				printf("current fd:[%i]\n",fd);
 				if (num == 0) {
 					/* client exits */
+					printf("dandandadandnandandanadnadnadnadadnand\n");
 					close(fd);
 					FD_CLR(fd, &allset);
+					User *user = sys.findUserFd(fd);
+					if (user != nullptr) {
+						user->logout();
+					}
+					states[fd] = 0;
 					itr = sock_vector.erase(itr);
 					continue;
 				} //quit
@@ -389,15 +407,7 @@ void start_server(char* port) {
 					
 				} //who
 				else if (states[fd] >= 3 && strncmp(buf, "who", 3) == 0) {
-					sys.onlineUpdate();
-					char out1[100];
-					sprintf(out1,"Total %i user(s) online:\n", sys.onlineUsers.size());
-					string out2;
-					for (User* u : sys.onlineUsers) {
-						out2 += u->username;
-					}
-					write(fd, out1, strlen(out1));
-					writeLine(fd, out2);
+					sys.who(fd);
 				}
 				if (states[fd]>=3){
 					User *user = sys.findUserFd(fd);
