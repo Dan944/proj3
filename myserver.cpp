@@ -56,7 +56,7 @@ struct User {
     string username; 
     string password;
     string information; 
-    vector<int> blocked_ids;
+    vector<string> blocked_names;
     bool quiet; /* whether this user is quiet*/
     bool login; /* whether this user is online*/
     string observeId;
@@ -118,6 +118,7 @@ struct System {
         return result;
     }
 	User* findUser(string username) {
+		rtrim(username);
         for (User *u : allUsers) {
             if (u->username == username) {
 				cout << "finded\n";
@@ -184,24 +185,10 @@ struct System {
 			user->loss = std::stoi(tokens[6]);
 			user->quiet = std::stoi(tokens[7]);		
 			std::istringstream blockStream(tokens[8]); // Use tokens[8] to create a stream
-			std::string blockId;
-			while (std::getline(blockStream, blockId, ';')) {
-				user->blocked_ids.push_back(std::stoi(blockId));
+			std::string blockName;
+			while (std::getline(blockStream, blockName, ';')) {
+				user->blocked_names.push_back(blockName);
 			}
-			// cout << "*********************************************" <<endl;
-			// cout << "username:" << user->username<<endl;
-			// cout << "password:" << user->password<<endl;
-			// cout << "id:" << user->id<<endl;
-			// cout << "info:" << user->information<<endl;
-			// cout << "rating:" << user->rating<<endl;
-			// cout << "win:" << user->win<<endl;
-			// cout << "loss:" << user->loss<<endl;
-			// cout << "quiet:" << user->quiet<<endl;
-			// cout << "block:";
-			// for (const auto& num : user->blocked_ids) {
-			// 	cout << num << ",";
-			// }
-			// cout << endl;
 			allUsers.push_back(user);
 		}
 		file.close();
@@ -225,13 +212,33 @@ struct System {
 	}
 	void save(){
 	}
+	void stats(int fd, string name){
+		char statsStr[1024];
+		User *user = findUser(name);
+		if (user == nullptr){
+			writeLine(fd,"User does not exist.");
+			return;
+		}
+		int i=0;
+		const char* boolStr1 = user->quiet ? "Yes" : "No";
+		const char* boolStr2 = user->login ? "Online" : "Offline";
+		string blockStr = "";
+		char loginStr[100] = "";
+		sprintf(loginStr,"%s is currently %s.",user->username.c_str(),boolStr2);
+		for ( i = 0; i < user->blocked_names.size(); i++) {
+			blockStr += user->blocked_names[i];
+			blockStr += " ";
+		}
+		sprintf(statsStr,"User: %s\nInfo: %s\nRating: %f\nWins: %d, Loses: %d\nQuiet: %s\nBlocked users: %s\n\n%s\n",
+			user->username.c_str(),user->information.c_str(),user->rating,user->win,user->loss,boolStr1,blockStr.c_str(),loginStr);
+		write(fd,statsStr,strlen(statsStr));
+	}
 };
 System sys;
 
 
 void login(int rec_sock, string username, string password) {
 	char buf[1024] = "username(guest):";
-	rtrim(username);
 	rtrim(password);
 	// string dusername = username.substr(0, username.length() - 2);
 	// string dpassword = password.substr(0, password.length() - 2);
@@ -404,22 +411,26 @@ void start_server(char* port) {
 					// states[fd]=3;
 				} //register
 				else if (states[fd] == 2) {
-					
+					sys.regist(guest_username[fd],guest_password[fd])
 				} //who
 				else if (states[fd] >= 3 && strncmp(buf, "who", 3) == 0) {
 					sys.who(fd);
+				} //stats
+				else if (states[fd] >= 3 && strncmp(buf,"stats",5) == 0) {
+					char *token = strtok(buf, " "); // 第一次调用strtok，获取"stats"
+					int argCount = 0;
+					token = strtok(NULL, " ");
+					if (token != NULL) {
+						sys.stats(fd, token);
+					}
+					else {
+						User *user = sys.findUserFd(fd);
+						sys.stats(fd, user->username);
+					}
 				}
 				if (states[fd]>=3){
 					User *user = sys.findUserFd(fd);
 					user->writef("");
-					// if (user != nullptr) {
-					// 	sprintf(outbuf, "<%s: %i> ", user->username.c_str(), user->cmd);
-					// 	user->cmd++;
-					// 	// Ensure num is the length of outbuf, not the result of the read call
-					// 	write(fd, outbuf, strlen(outbuf)); 
-					// } else {
-					// 	printf("Error: User not found for fd: %d\n", fd);
-					// }
 				} 
 			}
 			++itr;
