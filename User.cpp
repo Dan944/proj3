@@ -1,0 +1,75 @@
+#include "User.h"
+#include <cstring>
+
+std::vector<User*> User::allUsers;
+
+// Constructor with parameters
+User::User(std::string username, std::string password)
+    : username(username), 
+      password(password),
+      id(id), // Assuming default id is 0 or an appropriate default value
+      sockId(-1), // -1 often used to indicate an invalid socket id
+      information(""),
+      rating(0.0), // Assuming default rating is 0.0 or an appropriate default value
+      quiet(false),
+      login(false),
+      observeId(""),
+      playId(""),
+      win(0),
+      loss(0),
+      cmd(0) 
+{ 
+    
+}
+
+// Default constructor
+User::User() 
+    : quiet(false), 
+    login(false), 
+    sockId(-1) 
+{
+
+}
+
+User* User::findUser(const std::string& username) {
+    for (User* u : allUsers) {
+        std::cout << "data:" << u->username << " || this:" << username << std::endl;
+        if (u->username == username) {
+            std::cout << "found\n";
+            return u;
+        }
+    }
+    return nullptr;
+}
+
+// Getters
+std::string User::getUsername() const { return username; }
+std::string User::getPassword() const { return password; }
+std::string User::getInformation() const { return information; }
+std::vector<std::string> User::getBlockedNames() const { return blocked_names; }
+bool User::isQuiet() const { return quiet; }
+bool User::isLogin() const { return login; }
+std::string User::getObserveId() const { return observeId; }
+std::string User::getPlayId() const { return playId; }
+int User::getSockId() const { return sockId; }
+float User::getRating() const { return rating; }
+int User::getWin() const { return win; }
+int User::getLoss() const { return loss; }
+int User::getId() const { return id; }
+int User::getcmd() const { return cmd;}
+
+// Setters
+void User::setUsername(const std::string& val) { username = val; }
+void User::setPassword(const std::string& val) { password = val; }
+void User::setInformation(const std::string& val) { information = val; }
+void User::setBlockedNames(const std::vector<std::string>& val) { blocked_names = val; }
+void User::setQuiet(bool val) { quiet = val; }
+void User::setLogin(bool val) { login = val; }
+void User::setObserveId(const std::string& val) { observeId = val; }
+void User::setPlayId(const std::string& val) { playId = val; }
+void User::setSockId(int val) { sockId = val; }
+void User::setRating(float val) { rating = val; }
+void User::setWin(int val) { win = val; }
+void User::setLoss(int val) { loss = val; }
+void User::setId(int val) { id = val; }
+void User::setcmd(int val) { cmd = val; }
