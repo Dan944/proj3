@@ -418,7 +418,7 @@ void start_server(char* port) {
 					itr = sock_vector.erase(itr);
 					continue;
 				} //quit
-				if (states[fd]==-1 || strncmp(buf, "quit", 4) == 0 || strncmp(buf, "quit", 4) == 0) {
+				if (states[fd]==-1 || strncmp(buf, "quit", 4) == 0 || strncmp(buf, "exit", 4) == 0) {
 					// printf("gogoin: %s\n",buf);
 					// printf("Client sent 'quit'. Closing connection.\n");
 					printf("close socket [%d]\n",fd);
