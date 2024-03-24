@@ -193,7 +193,12 @@ struct System {
 		}
 		file.close();
 	}
-	void regist(string username, string password) {
+	void regist(int fd, string username, string password) {
+		User *user1 = findUser(username);
+		if (user1 != nullptr ){
+			writeLine(fd, "This name has been registed, please user another name");
+			return;
+		}
 		User *user = new User(username, password);
 		for (int i=0; i<=1024; i++){
 			bool ava = true;
@@ -209,6 +214,7 @@ struct System {
 		}
 		allUsers.push_back(user);
 		System::save();
+		writeLine(fd, "registed sucessful");
 	}
 	void save(){
 	}
@@ -396,7 +402,7 @@ void start_server(char* port) {
 				} // login-username
 				else if (states[fd] == 0) {
 					if (strncmp(buf,"guest",5) == 0){
-						writeLine(fd, "guest mode");
+						writeLine(fd, "You can only use 'register username password' as a guest.");
 						states[fd] = 2;
 					}
 					else {
@@ -411,13 +417,37 @@ void start_server(char* port) {
 					// states[fd]=3;
 				} //register
 				else if (states[fd] == 2) {
-					sys.regist(guest_username[fd],guest_password[fd])
+					if (strncmp(buf,"register",8) != 0) {
+						writeLine(fd, "You are not supposed to do this.\nYou can only use 'register username password' as a guest.");
+						continue;
+					}
+					else {
+						char *token = strtok(buf, " "); 
+						token = strtok(NULL, " ");
+						if (token == NULL) {
+							writeLine(fd, "You are not supposed to do this.\nYou can only use 'register username password' as a guest.");
+							continue;
+						}
+						else {
+							string username = token;
+							token = strtok(NULL, " ");
+							if (token == NULL) {
+								writeLine(fd, "You are not supposed to do this.\nYou can only use 'register username password' as a guest.");
+								continue;
+							}
+							else {
+								string password = token;
+								sys.regist(fd, username,password);
+							}
+						}
+					}
+
 				} //who
 				else if (states[fd] >= 3 && strncmp(buf, "who", 3) == 0) {
 					sys.who(fd);
 				} //stats
 				else if (states[fd] >= 3 && strncmp(buf,"stats",5) == 0) {
-					char *token = strtok(buf, " "); // 第一次调用strtok，获取"stats"
+					char *token = strtok(buf, " "); 
 					int argCount = 0;
 					token = strtok(NULL, " ");
 					if (token != NULL) {
