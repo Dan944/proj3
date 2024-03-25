@@ -29,6 +29,8 @@ public:
 
     static std::vector<User*> allUsers;
     static User* findUser(const std::string& username);
+    void logout();
+    void writef(std::string buf);
 
     // Getters
     std::string getUsername() const;

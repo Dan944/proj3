@@ -1,0 +1,4 @@
+g++ -c System.cpp -o System.o
+g++ -c User.cpp -o User.o
+g++ -c myserver.cpp -o myserver.o
+g++ System.o User.o myserver.o -o test.exe
