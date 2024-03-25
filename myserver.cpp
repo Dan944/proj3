@@ -41,9 +41,9 @@ void print_fd_set(const fd_set *set, int ccc) {
     }
 }
 
-static inline void rtrim(std::string &s) {
-    s.erase(std::find_if(s.rbegin(), s.rend(), [](unsigned char ch) {
-        return !std::isspace(ch);
+static inline void rtrim(string &s) {
+    s.erase(find_if(s.rbegin(), s.rend(), [](unsigned char ch) {
+        return !isspace(ch);
     }).base(), s.end());
 }
 
@@ -159,34 +159,35 @@ struct System {
 		writeLine(fd, out2);
 	}
 	void load_user() {
-		std::string filePath = "data/user"; // Adjust the path as necessary
-		std::ifstream file(filePath);
+		string filePath = "data/user"; // Adjust the path as necessary
+		ifstream file(filePath);
 		if (!file.is_open()) {
-			std::cerr << "Failed to open user file." << std::endl;
+			cerr << "Failed to open user file." << endl;
 		}
-		std::string line;
-		std::getline(file, line);
-		while (std::getline(file, line)) {
+		string line;
+		getline(file, line);
+		while (getline(file, line)) {
 			// user,password,id,info,rating,win,loses,quiet,block,online
 			int count = 0;
 			User *user = new User();
-			std::stringstream ss(line);
-			std::string item;
-			std::vector<std::string> tokens;
-			while (std::getline(ss, item, ',')) {
+			stringstream ss(line);
+			string item;
+			vector<string> tokens;
+			while (getline(ss, item, ',')) {
 				tokens.push_back(item);
 			}
+			tokens.push_back("");
 			user->username = tokens[0];
 			user->password = tokens[1];
-			user->id = std::stoi(tokens[2]);
+			user->id = stoi(tokens[2]);
 			user->information = tokens[3];
-			user->rating = std::stof(tokens[4]);
-			user->win = std::stoi(tokens[5]);
-			user->loss = std::stoi(tokens[6]);
-			user->quiet = std::stoi(tokens[7]);		
-			std::istringstream blockStream(tokens[8]); // Use tokens[8] to create a stream
-			std::string blockName;
-			while (std::getline(blockStream, blockName, ';')) {
+			user->rating = stof(tokens[4]);
+			user->win = stoi(tokens[5]);
+			user->loss = stoi(tokens[6]);
+			user->quiet = stoi(tokens[7]);
+			istringstream blockStream(tokens[8]); // Use tokens[8] to create a stream
+			string blockName;
+			while (getline(blockStream, blockName, ';')) {
 				user->blocked_names.push_back(blockName);
 			}
 			allUsers.push_back(user);
@@ -199,6 +200,7 @@ struct System {
 			writeLine(fd, "This name has been registed, please user another name");
 			return;
 		}
+		rtrim(password);
 		User *user = new User(username, password);
 		for (int i=0; i<=1024; i++){
 			bool ava = true;
@@ -217,6 +219,47 @@ struct System {
 		writeLine(fd, "registed sucessful");
 	}
 	void save(){
+		string filePath = "data/user";
+		ofstream outFile(filePath, ofstream::trunc); // Open the file in truncate mode to overwrite
+
+		if (!outFile.is_open()) {
+			cerr << "Failed to open file for writing: " << filePath << endl;
+			return;
+		}
+
+		outFile << "User" << ","
+				<< "Password" << ","
+				<< "ID" << ","
+				<< "Information" << ","
+				<< "Rating" << ","
+				<< "Win" << ","
+				<< "Loss" << ","
+				<< "isQuiet" << ","
+				<< "BlockName" << endl;
+
+		for (const User* user : allUsers) {
+			// Convert blocked_ids vector to a string
+			printf("loop\n");
+			stringstream blockedNamesStream;
+			for (size_t i = 0; i < user->blocked_names.size(); ++i) {
+				blockedNamesStream << user->blocked_names[i];
+				if (i < user->blocked_names.size() - 1) blockedNamesStream << ";"; // delimiter for blocked_ids
+			}
+
+			// Writing user data, converting boolean to string for clarity
+			outFile << user->username << ","
+					<< user->password << ","
+					<< user->id << ","
+					<< user->information << ","
+					<< user->rating << ","
+					<< user->win << ","
+					<< user->loss << ","
+					<< (user->quiet ? true : false) << ","
+					<< blockedNamesStream.str() << endl;
+		}
+
+		outFile.close();
+		cout << "User data saved successfully." << endl;
 	}
 	void stats(int fd, string name){
 		char statsStr[1024];
