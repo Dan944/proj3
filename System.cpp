@@ -56,8 +56,9 @@ void System::regist(int fd, std::string username, std::string password) {
         writeLine(fd, "This name has been registed, please user another name");
         return;
     }
+    rtrim(password);
     User *user = new User(username, password);
-    for (int i=0; i<=1024; i++){
+    for (int i=1; i<=1024; i++){
         bool ava = true;
         for (User *u : allUsers) {
             if (u->id == i) {
@@ -94,6 +95,7 @@ void System::load_user() {
         while (std::getline(ss, item, ',')) {
             tokens.push_back(item);
         }
+        tokens.push_back("");
         user->setUsername(tokens[0]);
         printf("0\n");
         user->setPassword(tokens[1]);
@@ -121,7 +123,8 @@ void System::load_user() {
     file.close();
 }
 
-User* System::findUser(const std::string& username) {
+User* System::findUser(std::string username) {
+    rtrim(username);
     for (User* u : allUsers) {
         if (u->getUsername() == username) {
             return u;
@@ -209,7 +212,7 @@ void System::saveUserData() {
                 << user->getWin() << ","
                 << user->getLoss() << ","
                 << (user->isQuiet() ? true : false) << ","
-                << blockedNamesStream.str() << std::endl;
+                << blockedNamesStream.str() <<std::endl;
     }
 
     outFile.close();
@@ -238,35 +241,51 @@ void System::stats(int fd, const std::string name){
     write(fd,statsStr,strlen(statsStr));
 }
 
-// void System::login(int rec_sock, std::string username, std::string password) {
-// 	char buf[1024] = "username(guest):";
-// 	System::rtrim(password);
-// 	// string dusername = username.substr(0, username.length() - 2);
-// 	// string dpassword = password.substr(0, password.length() - 2);
-// 	User *user = System::findUser(username);
-// 	if (user == nullptr) {
-// 		System::writeLine(rec_sock, "Incorrect username");
-// 		states[rec_sock] = 0;
-// 		write(rec_sock, buf, strlen(buf));
-// 	} else if (user->password==password){
-// 		if (user->login==true) {
-// 			states[user->sockId]=-1;
-// 			char q[100];
-// 			strcpy(q,"sorry, your account has been login in other place, enter any button to quit\n");
-// 			write(user->sockId,q,strlen(q));
-// 			user->sockId = rec_sock;
-// 			states[rec_sock] = 3;
-// 			user->cmd = 0;
-// 		} else {
-// 			user->login = true;
-// 			user->sockId = rec_sock;
-// 			states[rec_sock] = 3;
-// 		}
-// 	} else {
-// 		writeLine(rec_sock, "Incorrect password");
-// 		std::cout << "user.password = "<<user->password<<std::endl;
-// 		std::cout << "password = "<<password<<std::endl;
-// 		states[rec_sock] = 0;
-// 		write(rec_sock, buf, strlen(buf));
-// 	}
-// }
+void System::help(int fd){
+    std::string helps = 
+        "Commands supported:\n"
+        "  who                     # List all online users\n"
+        "  stats [name]            # Display user information\n"
+        "  game                    # list all current games\n"
+        "  observe <game_num>      # Observe a game\n"
+        "  unobserve               # Unobserve a game\n"
+        "  match <name> <b|w> [t]  # Try to start a game\n"
+        "  <A|B|C><1|2|3>          # Make a move in a game\n"
+        "  resign                  # Resign a game\n"
+        "  refresh                 # Refresh a game\n"
+        "  shout <msg>             # shout <msg> to every one online\n"
+        "  tell <name> <msg>       # tell user <name> message\n"
+        "  kibitz <msg>            # Comment on a game when observing\n"
+        "  ' <msg>                 # Comment on a game\n"
+        "  quiet                   # Quiet mode, no broadcast messages\n"
+        "  nonquiet                # Non-quiet mode\n"
+        "  block <id>              # No more communication from <id>\n"
+        "  unblock <id>            # Allow communication from <id>\n"
+        "  listmail                # List the header of the mails\n"
+        "  readmail <msg_num>      # Read the particular mail\n"
+        "  deletemail <msg_num>    # Delete the particular mail\n"
+        "  mail <id> <title>       # Send id a mail\n"
+        "  info <msg>              # change your information to <msg>\n"
+        "  passwd <new>            # change password\n"
+        "  exit                    # quit the system\n"
+        "  quit                    # quit the system\n"
+        "  help                    # print this message\n"
+        "  ?                       # print this message";
+    writeLine(fd, helps);
+}
+void System::info(int fd, char* buf){
+    char *token = strchr(buf, ' '); 
+    int argCount = 0;
+    if (token != NULL) {
+        User *user = findUserFd(fd);
+        token++;
+        char *msg = strchr(token, '\n');
+        if (msg != NULL) {
+            *msg = '\0';
+        }
+        user->information = token;
+    }
+    else {
+        writeLine(fd,"Please enter information as info <msg>");
+    }
+}

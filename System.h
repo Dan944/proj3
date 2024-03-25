@@ -19,9 +19,9 @@ public:
     void init();
     void who();
     void load_user();
-    User user;
     std::vector<int> states = std::vector<int>(100, 0);
-    User* findUser(const std::string& username);
+
+    User* findUser(std::string username);
     User* findUserFd(const int fd);
     void onlineUpdate();
     void who(int fd);
@@ -30,7 +30,8 @@ public:
     void writeLine(int socketId, const std::string line);
     static void rtrim(std::string &s);
     void printAllUsers() const;
-    // void login(int rec_sock, std::string username, std::string password);
+    void help(int fd);
+    void info(int fd, char* buf);
     
     void startAutoSave();
     void stopAutoSave();
