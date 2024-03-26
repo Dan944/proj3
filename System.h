@@ -40,6 +40,7 @@ public:
     void stopAutoSave();
     void saveUserData(); 
     void shout(int fd, char* buf);
+    void passwd(int fd, char* buf);
 
     // std::atomic<bool> keepRunning;
     // std::thread autoSaveThread;
