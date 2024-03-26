@@ -96,23 +96,14 @@ void System::load_user() {
         }
         tokens.push_back("");
         user->setUsername(tokens[0]);
-        printf("0\n");
         user->setPassword(tokens[1]);
-        printf("1\n");
         user->setId(std::stoi(tokens[2]));
-        printf("2\n");
         user->setInformation(tokens[3]);
-        printf("4\n");
         user->setRating(std::stof(tokens[4]));
-        printf("5\n");
         user->setWin(std::stoi(tokens[5]));
-        printf("9\n");
         user->setLoss(std::stoi(tokens[6]));
-        printf("10\n");
         user->setQuiet(std::stoi(tokens[7]));
-        printf("11\n");
         std::istringstream blockStream(tokens[8]); // Use tokens[8] to create a stream
-        printf("13\n");
         std::string blockName;
         while (std::getline(blockStream, blockName, ';')) {
             user->blocked_names.push_back(blockName);
