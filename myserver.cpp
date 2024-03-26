@@ -18,9 +18,9 @@
 #include <cctype>
 #include "User.h"
 #include "System.h"
-// #include "ChatInfo.h"
+#include "ChatInfo.h"
 // #include "GameList.h"
-// #include "GameRecall.h"
+#include "GameRecall.h"
 
 using namespace std;
 vector<int> states(100, 0);
@@ -292,6 +292,9 @@ void start_server(char* port) {
 					User *user = sys.findUserFd(fd);
 					user->quiet = false;
 					writeLine(fd,"Enter nonquiet mode.");
+				}
+				else if (states[fd] >= 3 && (strncmp(buf, "passwd", 6) == 0)) {
+					sys.passwd(fd,buf);
 				}
 				if (states[fd]>=3){
 					User *user = sys.findUserFd(fd);
