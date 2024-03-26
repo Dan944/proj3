@@ -16,4 +16,6 @@
   quit                    # quit the system\
   help                    # print this message\
   ?                       # print this message\
-  passwd <new>            # change the password
+  passwd <new>            # change the password\
+  block <id>              # No more communication from <id>\
+  unblock <id>            # Allow communication from <id>
