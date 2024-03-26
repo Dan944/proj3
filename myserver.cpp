@@ -296,6 +296,12 @@ void start_server(char* port) {
 				else if (states[fd] >= 3 && (strncmp(buf, "passwd", 6) == 0)) {
 					sys.passwd(fd,buf);
 				}
+				else if (states[fd] >= 3 && (strncmp(buf, "block", 5) == 0)) {
+					sys.block(fd, buf);
+				}
+				else if (states[fd] >= 3 && (strncmp(buf, "unblock", 7) == 0)) {
+					sys.unblock(fd, buf);
+				}
 				if (states[fd]>=3){
 					User *user = sys.findUserFd(fd);
 					user->writef("");
