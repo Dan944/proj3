@@ -5,7 +5,7 @@
 1  未登录（输入usrname）\
 2  guest\
 3  已登录
-## 进度
+## 已完成
   who\
   stats [name]\
   shout \<msg>\
@@ -19,3 +19,12 @@
   passwd \<new>\
   block \<name>\
   unblock \<name>
+
+## 未完成
+game\
+observe \<game_num>\
+unobserve\
+match \<name> \<b|w> [t]\
+\<A|B|C>\<1|2|3>\
+resign\
+refresh\
