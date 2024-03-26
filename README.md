@@ -16,6 +16,6 @@
   quit\
   help\
   ?\
-  passwd <new>\
+  passwd \<new>\
   block <id>\
   unblock <id>
