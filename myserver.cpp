@@ -302,6 +302,9 @@ void start_server(char* port) {
 				else if (states[fd] >= 3 && (strncmp(buf, "unblock", 7) == 0)) {
 					sys.unblock(fd, buf);
 				}
+				else if (states[fd] >= 3 && (strncmp(buf, "tell", 4) == 0)) {
+					sys.tell(fd, buf);
+				}
 				if (states[fd]>=3){
 					User *user = sys.findUserFd(fd);
 					user->writef("");
