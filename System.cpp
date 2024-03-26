@@ -364,3 +364,30 @@ void System::unblock(int fd, char* buf){
         writeLine(fd,"Please enter information as unblock <name>");
     }
 }
+void System::tell(int fd, char* buf){
+    const char* delim = " ";
+    strtok(buf, delim);
+    char* name = strtok(NULL, delim);
+    if (name == NULL) {
+        writeLine(fd, "Please enter information as tell <name> <msg>");
+        return;
+    }
+    User* duser = findUser(string(name));
+    if (duser==nullptr || duser->login==false) {
+        writeLine(fd, "No such online user " + string(name));
+        return;
+    }
+    if (duser==nullptr || duser->login==false) {
+        writeLine(fd, "No such online user " + string(name));
+        return;
+    }
+    User* user = findUserFd(fd);
+    if (find(duser->blocked_names.begin(), duser->blocked_names.end(), user->username) != duser->blocked_names.end()) {
+        writeLine(fd, "You have been blocked");
+        return;
+    }
+    char* msg = name + strlen(name) + 1;
+    string outmsg = string(msg);
+    rtrim(outmsg);
+    writeLine(duser->sockId, outmsg);
+}
