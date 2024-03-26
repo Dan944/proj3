@@ -10,6 +10,9 @@
 #include <sstream>
 #include <chrono>
 #include <vector>
+#include <string>
+
+using namespace std;
 
 class System {
 public:
@@ -36,6 +39,7 @@ public:
     void startAutoSave();
     void stopAutoSave();
     void saveUserData(); 
+    void shout(int fd, char* buf);
 
     // std::atomic<bool> keepRunning;
     // std::thread autoSaveThread;
