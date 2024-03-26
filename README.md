@@ -5,7 +5,7 @@
 1  未登录（输入usrname）\
 2  guest\
 3  已登录
-##进度
+## 进度
   who                     # List all online users\
   stats [name]            # Display user information\
   shout <msg>             # shout <msg> to every one online\
