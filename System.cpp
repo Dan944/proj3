@@ -305,3 +305,17 @@ void System::shout(int fd, char* buf) {
         writeLine(fd,"Please enter information as shout <msg>");
     }
 }
+void System::passwd(int fd, char* buf){
+    User *user = findUserFd(fd);
+    char* token = strtok(buf, " ");
+    token = strtok(NULL, " ");
+    if (token != NULL) {
+        string pwd = token;
+        rtrim(pwd);
+        user->password = pwd;
+        writeLine(fd,"password changed");
+    }
+    else {
+        writeLine(fd,"Please enter information as passwd <pwd>");
+    }
+}
