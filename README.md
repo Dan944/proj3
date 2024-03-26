@@ -18,7 +18,8 @@
   ?\
   passwd \<new>\
   block \<name>\
-  unblock \<name>
+  unblock \<name>\
+  tell \<name> \<msg>
 
 ## 未完成
   game\
@@ -28,7 +29,6 @@
   \<A|B|C>\<1|2|3>\
   resign\
   refresh\
-  tell \<name> \<msg>\
   kibitz \<msg>\
   ’ \<msg>\
   listmail\
