@@ -21,10 +21,18 @@
   unblock \<name>
 
 ## 未完成
-game\
-observe \<game_num>\
-unobserve\
-match \<name> \<b|w> [t]\
-\<A|B|C>\<1|2|3>\
-resign\
-refresh\
+  game\
+  observe \<game_num>\
+  unobserve\
+  match \<name> \<b|w> [t]\
+  \<A|B|C>\<1|2|3>\
+  resign\
+  refresh\
+  tell \<name> \<msg>\
+  kibitz \<msg>\
+  ’ \<msg>\
+  listmail\
+  readmail \<msg_num>\
+  deletemail \<msg_num>\
+  mail \<id> \<title>\
+
