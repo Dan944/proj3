@@ -15,4 +15,5 @@
   exit                    # quit the system\
   quit                    # quit the system\
   help                    # print this message\
-  ?                       # print this message
+  ?                       # print this message\
+  passwd <new>            # change the password
