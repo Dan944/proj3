@@ -8,16 +8,16 @@
 
 class ChatInfo {
 public:
-    std::chrono::system_clock::time_point time; // Use chrono's time_point for time representation
     int gameid;
     std::string chatContent;
     User *rec_User; // Use smart pointers for user references
     User *send_User;
+    std::chrono::system_clock::time_point time; // Use chrono's time_point for time representation
     bool isRecv = false; // Initialized default value
     bool isRead = false; // Initialized default value
 
     // Constructor
-    ChatInfo(int gameId, const std::string& content, std::shared_ptr<User> sender, std::shared_ptr<User> receiver)
+    ChatInfo(int gameId, const std::string& content, User *sender, User *receiver)
       : gameid(gameId), 
         chatContent(content), 
         rec_User(receiver), 
