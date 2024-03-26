@@ -10,7 +10,9 @@
 #include <algorithm>
 #include <cctype>
 #include <vector>
+#include <string>
 
+using namespace std;
 // Gets all usernames from the system's user list
 std::vector<std::string> System::getAllUsers() {
     std::vector<std::string> usernames;
@@ -274,8 +276,32 @@ void System::info(int fd, char* buf){
             *msg = '\0';
         }
         user->information = token;
+        saveUserData();
     }
     else {
         writeLine(fd,"Please enter information as info <msg>");
+    }
+}
+
+void System::shout(int fd, char* buf) {
+    char *token = strchr(buf, ' '); 
+    if (token != NULL) {
+        token++;
+        char *end = strchr(token, '\n');
+        if (end != NULL) {
+            *end = '\0';
+        }
+        onlineUpdate();
+        char msg[100];
+        User *user = findUserFd(fd);
+        sprintf(msg,"!shout! *%s*: %s", user->username.c_str(), token);
+        for (User* u : onlineUsers) {
+            if (u->quiet==false) {
+                writeLine(u->sockId,string(msg));
+            }
+        }
+    }
+    else {
+        writeLine(fd,"Please enter information as shout <msg>");
     }
 }
