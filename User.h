@@ -14,18 +14,31 @@ class User {
 public:
     std::string username; 
     std::string password;
+    int id;
+    int sockId;
     std::string information; 
-    std::vector<std::string> blocked_names;
-    bool quiet; // whether this user is quiet
+    bool quiet;
     bool login; // whether this user is online
     std::string observeId;
     std::string playId;
-    int sockId;
 	float rating;
 	int win;
 	int loss;
-	int id;
     int cmd;
+    std::vector<std::string> blocked_names;
+    // : username(username), 
+    //   password(password),
+    //   id(id), // Assuming default id is 0 or an appropriate default value
+    //   sockId(-1), // -1 often used to indicate an invalid socket id
+    //   information(""),
+    //   rating(0.0), // Assuming default rating is 0.0 or an appropriate default value
+    //   quiet(false),
+    //   login(false),
+    //   observeId(""),
+    //   playId(""),
+    //   win(0),
+    //   loss(0),
+    //   cmd(0) 
 
     static std::vector<User*> allUsers;
     static User* findUser(const std::string& username);

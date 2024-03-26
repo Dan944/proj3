@@ -7,27 +7,27 @@ std::vector<User*> User::allUsers;
 // Constructor with parameters
 User::User(std::string username, std::string password)
     : username(username), 
-      password(password),
-      id(id), // Assuming default id is 0 or an appropriate default value
-      sockId(-1), // -1 often used to indicate an invalid socket id
-      information(""),
-      rating(0.0), // Assuming default rating is 0.0 or an appropriate default value
-      quiet(false),
-      login(false),
-      observeId(""),
-      playId(""),
-      win(0),
-      loss(0),
-      cmd(0) 
+    password(password),
+    id(-1), // Assuming default id is 0 or an appropriate default value
+    sockId(-1), // -1 often used to indicate an invalid socket id
+    information(""),
+    quiet(false),
+    login(false),
+    observeId(""),
+    playId(""),
+    rating(0.0), // Assuming default rating is 0.0 or an appropriate default value
+    win(0),
+    loss(0),
+    cmd(0) 
 { 
     
 }
 
 // Default constructor
 User::User() 
-    : quiet(false), 
-    login(false), 
-    sockId(-1) 
+    : sockId(-1) ,
+    quiet(false), 
+    login(false)
 {
 
 }

@@ -40,7 +40,8 @@ void System::writeLine(int socketId, const std::string line) {
 void System::who(int fd) {
     onlineUpdate();
     char out1[100];
-    sprintf(out1,"Total %i user(s) online:\n", onlineUsers.size());
+    int usern = onlineUsers.size();
+    sprintf(out1,"Total %d user(s) online:\n", usern);
     std::string out2;
     for (User* u : onlineUsers) {
         out2 += u->username;
@@ -86,8 +87,6 @@ void System::load_user() {
     std::getline(file, line);
     while (std::getline(file, line)) {
         // User,Password,ID,SockID,Information,Rating,ObserverID,PlayID,cmd,Win,Loss,isQuiet,isLogin,BlockName
-        printf("******************************loop*************************************\n");
-        int count = 0;
         User *user = new User();
         std::stringstream ss(line);
         std::string item;
@@ -232,7 +231,8 @@ void System::stats(int fd, const std::string name){
     std::string blockStr = "";
     char loginStr[100] = "";
     sprintf(loginStr,"%s is currently %s.",user->username.c_str(),boolStr2);
-    for ( i = 0; i < user->blocked_names.size(); i++) {
+    int usern = user->blocked_names.size();
+    for ( i = 0; i < usern; i++) {
         blockStr += user->blocked_names[i];
         blockStr += " ";
     }
@@ -275,7 +275,6 @@ void System::help(int fd){
 }
 void System::info(int fd, char* buf){
     char *token = strchr(buf, ' '); 
-    int argCount = 0;
     if (token != NULL) {
         User *user = findUserFd(fd);
         token++;
