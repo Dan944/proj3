@@ -43,6 +43,7 @@ public:
     void passwd(int fd, char* buf);
     void block(int fd, char* buf);
     void unblock(int fd, char* buf);
+    void tell(int fd, char* buf);
 
     // std::atomic<bool> keepRunning;
     // std::thread autoSaveThread;
