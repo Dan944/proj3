@@ -252,8 +252,8 @@ void System::help(int fd){
         "  ' <msg>                 # Comment on a game\n"
         "  quiet                   # Quiet mode, no broadcast messages\n"
         "  nonquiet                # Non-quiet mode\n"
-        "  block <id>              # No more communication from <id>\n"
-        "  unblock <id>            # Allow communication from <id>\n"
+        "  block <name>            # No more communication from <name>\n"
+        "  unblock <name>          # Allow communication from <name>\n"
         "  listmail                # List the header of the mails\n"
         "  readmail <msg_num>      # Read the particular mail\n"
         "  deletemail <msg_num>    # Delete the particular mail\n"
@@ -314,8 +314,53 @@ void System::passwd(int fd, char* buf){
         rtrim(pwd);
         user->password = pwd;
         writeLine(fd,"password changed");
+        saveUserData();
     }
     else {
         writeLine(fd,"Please enter information as passwd <pwd>");
+    }
+}
+void System::block(int fd, char* buf){
+    User *user = findUserFd(fd);
+    char* token = strtok(buf, " ");
+    token = strtok(NULL, " ");
+    if (token != NULL) {
+        string name = token;
+        rtrim(name);
+        User* buser = findUser(name);
+        if (buser == nullptr) {
+            writeLine(fd, "No user " + name);
+        }
+        else if (find(user->blocked_names.begin(), user->blocked_names.end(), name) != user->blocked_names.end()) {
+            writeLine(fd, "User " + name + " has already been blocked");
+        }
+        else {
+            user->blocked_names.push_back(buser->username);
+            writeLine(fd, "User "+name+" blocked");
+            saveUserData();
+        }
+    }
+    else {
+        writeLine(fd,"Please enter information as block <name>");
+    }
+}
+void System::unblock(int fd, char* buf){
+    User *user = findUserFd(fd);
+    char* token = strtok(buf, " ");
+    token = strtok(NULL, " ");
+    if (token != NULL) {
+        string name = token;
+        rtrim(name);
+        if (find(user->blocked_names.begin(), user->blocked_names.end(), name) != user->blocked_names.end()) {
+            user->blocked_names.erase(remove(user->blocked_names.begin(), user->blocked_names.end(), name), 
+                user->blocked_names.end());
+            writeLine(fd, "Unblocked "+name);
+            saveUserData();
+        } else {
+            writeLine(fd, "User " +name+ " was not blocked");
+        }
+    }
+    else {
+        writeLine(fd,"Please enter information as unblock <name>");
     }
 }
