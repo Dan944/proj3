@@ -54,194 +54,6 @@ void writeLine(int socketId, const string line) {
     write(socketId, temp.c_str(), temp.size());
 }
 
-// struct User {
-//     string username; 
-//     string password;
-//     string information; 
-//     vector<string> blocked_names;
-//     bool quiet; /* whether this user is quiet*/
-//     bool login; /* whether this user is online*/
-//     string observeId;
-//     string playId;
-//     int sockId;
-// 	float rating;
-// 	int win;
-// 	int loss;
-// 	int id;
-// 	int cmd;
-
-//     User(string username, string password) {
-//         this->username = username;
-//         this->password = password;
-//         information = username;
-//         quiet = false;
-//         login = false;
-//         sockId = -1;
-// 		cmd = 0 ;
-// 		win = 0;
-// 		loss = 0;
-// 		rating = 0;
-
-//     }
-// 	User() {
-//         this->username = username;
-//         this->password = password;
-//         information = username;
-//         quiet = false;
-//         login = false;
-//         sockId = -1;
-// 		cmd = 0;
-// 		win = 0;
-// 		loss = 0;
-// 		rating = 0;
-//     }
-// 	void logout() {
-// 		login = false;
-// 		cmd = 0;
-// 		sockId = -1;
-// 		//game-related should be dealed here
-// 	}
-// 	void writef(string buf) {
-// 		char outbuf[1024];
-// 		sprintf(outbuf, "<%s: %i> %s", username.c_str(), cmd, buf.c_str());
-// 		cmd++;
-// 		// Ensure num is the length of outbuf, not the result of the read call
-// 		write(sockId, outbuf, strlen(outbuf)); 
-// 	}
-// };
-// struct System {
-//     vector<User*> allUsers;
-// 	vector<User*> onlineUsers;
-// 	vector<string> getAllUsers() {
-//         vector<string> result;
-//         for (User *u : allUsers) {
-//             result.push_back(u->username);
-//         }
-//         return result;
-//     }
-// 	User* findUser(string username) {
-// 		rtrim(username);
-//         for (User *u : allUsers) {
-//             if (u->username == username) {
-// 				cout << "finded\n";
-//                 return u;
-//             }
-//         }
-//         return nullptr;
-//     }
-// 	User* findUserFd(const int fd) {
-//         for (User *u : allUsers) {
-//             if (u->sockId == fd) {
-//                 return u;
-//             }
-//         }
-//         return nullptr;
-//     }
-// 	void init() {
-// 		System::load_user();
-// 	}
-// 	void onlineUpdate(){
-// 		onlineUsers.clear();
-// 		for (User* u : allUsers) {
-// 			if (u->login) { // If the user is marked as online
-// 				onlineUsers.push_back(u);
-// 			}
-// 		}
-// 	}
-// 	void who(int fd) {
-// 		onlineUpdate();
-// 		char out1[100];
-// 		sprintf(out1,"Total %i user(s) online:\n", onlineUsers.size());
-// 		string out2;
-// 		for (User* u : onlineUsers) {
-// 			out2 += u->username;
-// 			out2 += " ";
-// 		}
-// 		write(fd, out1, strlen(out1));
-// 		writeLine(fd, out2);
-// 	}
-// 	void load_user() {
-// 		std::string filePath = "data/user"; // Adjust the path as necessary
-// 		std::ifstream file(filePath);
-// 		if (!file.is_open()) {
-// 			std::cerr << "Failed to open user file." << std::endl;
-// 		}
-// 		std::string line;
-// 		std::getline(file, line);
-// 		while (std::getline(file, line)) {
-// 			// user,password,id,info,rating,win,loses,quiet,block,online
-// 			int count = 0;
-// 			User *user = new User();
-// 			std::stringstream ss(line);
-// 			std::string item;
-// 			std::vector<std::string> tokens;
-// 			while (std::getline(ss, item, ',')) {
-// 				tokens.push_back(item);
-// 			}
-// 			user->username = tokens[0];
-// 			user->password = tokens[1];
-// 			user->id = std::stoi(tokens[2]);
-// 			user->information = tokens[3];
-// 			user->rating = std::stof(tokens[4]);
-// 			user->win = std::stoi(tokens[5]);
-// 			user->loss = std::stoi(tokens[6]);
-// 			user->quiet = std::stoi(tokens[7]);		
-// 			std::istringstream blockStream(tokens[8]); // Use tokens[8] to create a stream
-// 			std::string blockName;
-// 			while (std::getline(blockStream, blockName, ';')) {
-// 				user->blocked_names.push_back(blockName);
-// 			}
-// 			allUsers.push_back(user);
-// 		}
-// 		file.close();
-// 	}
-// 	void regist(int fd, string username, string password) {
-// 		User *user1 = findUser(username);
-// 		if (user1 != nullptr ){
-// 			writeLine(fd, "This name has been registed, please user another name");
-// 			return;
-// 		}
-// 		User *user = new User(username, password);
-// 		for (int i=0; i<=1024; i++){
-// 			bool ava = true;
-// 			for (User *u : allUsers) {
-// 				if (u->id == i) {
-// 					ava = false;
-// 				}
-// 			}
-// 			if (ava) {
-// 				user->id = i;
-// 				break;
-// 			}
-// 		}
-// 		allUsers.push_back(user);
-// 		System::save();
-// 		writeLine(fd, "registed sucessful");
-// 	}
-// 	void save(){
-// 	}
-// 	void stats(int fd, string name){
-// 		char statsStr[1024];
-// 		User *user = findUser(name);
-// 		if (user == nullptr){
-// 			writeLine(fd,"User does not exist.");
-// 			return;
-// 		}
-// 		int i=0;
-// 		const char* boolStr1 = user->quiet ? "Yes" : "No";
-// 		const char* boolStr2 = user->login ? "Online" : "Offline";
-// 		string blockStr = "";
-// 		char loginStr[100] = "";
-// 		sprintf(loginStr,"%s is currently %s.",user->username.c_str(),boolStr2);
-// 		for ( i = 0; i < user->blocked_names.size(); i++) {
-// 			blockStr += user->blocked_names[i];
-// 			blockStr += " ";
-// 		}
-// 		sprintf(statsStr,"User: %s\nInfo: %s\nRating: %f\nWins: %d, Loses: %d\nQuiet: %s\nBlocked users: %s\n\n%s\n",
-// 			user->username.c_str(),user->information.c_str(),user->rating,user->win,user->loss,boolStr1,blockStr.c_str(),loginStr);
-// 		write(fd,statsStr,strlen(statsStr));
-// 	}
-// };
 System sys;
 
 
@@ -305,7 +117,6 @@ void start_server(char* port) {
 	struct sockaddr_in addr, recaddr;
 	struct sigaction abc;
 	char buf[100];
-	char outbuf[100];
 	fd_set allset, rset;
 	int maxfd;
 
@@ -452,7 +263,6 @@ void start_server(char* port) {
 				} //stats
 				else if (states[fd] >= 3 && strncmp(buf,"stats",5) == 0) {
 					char *token = strtok(buf, " "); 
-					int argCount = 0;
 					token = strtok(NULL, " ");
 					if (token != NULL) {
 						sys.stats(fd, token);
@@ -462,7 +272,7 @@ void start_server(char* port) {
 						sys.stats(fd, user->username);
 					}
 				}
-				else if (states[fd] >= 3 && (strncmp(buf, "help", 4) == 0) || (strncmp(buf, "?", 1) == 0)) {
+				else if (states[fd] >= 3 && ((strncmp(buf, "help", 4) == 0) || (strncmp(buf, "?", 1) == 0))) {
 					sys.help(fd);
 				}
 				else if (states[fd] >= 3 && (strncmp(buf, "info", 4) == 0)) {
