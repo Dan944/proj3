@@ -8,14 +8,14 @@
 ## 进度
   who\
   stats [name]\
-  shout <msg>\
+  shout \<msg>\
   quiet\
   nonquiet\
-  info <msg>\
+  info \<msg>\
   exit\
   quit\
   help\
   ?\
   passwd \<new>\
-  block <id>\
-  unblock <id>
+  block \<name>\
+  unblock \<name>
