@@ -4,7 +4,8 @@
 0  未登录\
 1  未登录（输入usrname）\
 2  guest\
-3  已登录
+3  已登录\
+4  发邮件
 ## 已完成
   who\
   stats [name]\
