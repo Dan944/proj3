@@ -392,7 +392,7 @@ int System::send_mail_1(int fd, char* buf, Email* email){
     char* msg = name + strlen(name) + 1;
     string tittle = string(msg);
     rtrim(tittle);
-    if(tlttle.length()==0){
+    if(tittle.length()==0){
         tittle = "No tittle";
     }
     email->tittle = tittle;
