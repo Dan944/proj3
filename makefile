@@ -5,7 +5,7 @@ CXX = g++
 CXXFLAGS = -Wall -g
 
 # Define the source files
-SOURCES = System.cpp User.cpp myserver.cpp
+SOURCES = Email.cpp User.cpp System.cpp myserver.cpp 
 
 # Define the object files from the source files
 OBJECTS = $(SOURCES:.cpp=.o)

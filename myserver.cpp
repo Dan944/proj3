@@ -260,10 +260,10 @@ void start_server(char* port) {
 					}
 
 				} //who
-				else if (states[fd] >= 3 && strncmp(buf, "who", 3) == 0) {
+				else if (states[fd] == 3 && strncmp(buf, "who", 3) == 0) {
 					sys.who(fd);
 				} //stats
-				else if (states[fd] >= 3 && strncmp(buf,"stats",5) == 0) {
+				else if (states[fd] == 3 && strncmp(buf,"stats",5) == 0) {
 					char *token = strtok(buf, " "); 
 					token = strtok(NULL, " ");
 					if (token != NULL) {
@@ -274,38 +274,44 @@ void start_server(char* port) {
 						sys.stats(fd, user->username);
 					}
 				}
-				else if (states[fd] >= 3 && ((strncmp(buf, "help", 4) == 0) || (strncmp(buf, "?", 1) == 0))) {
+				else if (states[fd] == 3 && ((strncmp(buf, "help", 4) == 0) || (strncmp(buf, "?", 1) == 0))) {
 					sys.help(fd);
 				}
-				else if (states[fd] >= 3 && (strncmp(buf, "info", 4) == 0)) {
+				else if (states[fd] == 3 && (strncmp(buf, "info", 4) == 0)) {
 					sys.info(fd, buf);
 				}
-				else if (states[fd] >= 3 && (strncmp(buf, "shout", 5) == 0)) {
+				else if (states[fd] == 3 && (strncmp(buf, "shout", 5) == 0)) {
 					sys.shout(fd, buf);
 				}
-				else if (states[fd] >= 3 && (strncmp(buf, "quiet", 5) == 0)) {
+				else if (states[fd] == 3 && (strncmp(buf, "quiet", 5) == 0)) {
 					User *user = sys.findUserFd(fd);
 					user->quiet = true;
 					writeLine(fd,"Enter quiet mode.");
 				}
-				else if (states[fd] >= 3 && (strncmp(buf, "nonquiet", 8) == 0)) {
+				else if (states[fd] == 3 && (strncmp(buf, "nonquiet", 8) == 0)) {
 					User *user = sys.findUserFd(fd);
 					user->quiet = false;
 					writeLine(fd,"Enter nonquiet mode.");
 				}
-				else if (states[fd] >= 3 && (strncmp(buf, "passwd", 6) == 0)) {
+				else if (states[fd] == 3 && (strncmp(buf, "passwd", 6) == 0)) {
 					sys.passwd(fd,buf);
 				}
-				else if (states[fd] >= 3 && (strncmp(buf, "block", 5) == 0)) {
+				else if (states[fd] == 3 && (strncmp(buf, "block", 5) == 0)) {
 					sys.block(fd, buf);
 				}
-				else if (states[fd] >= 3 && (strncmp(buf, "unblock", 7) == 0)) {
+				else if (states[fd] == 3 && (strncmp(buf, "unblock", 7) == 0)) {
 					sys.unblock(fd, buf);
 				}
-				else if (states[fd] >= 3 && (strncmp(buf, "tell", 4) == 0)) {
+				else if (states[fd] == 3 && (strncmp(buf, "tell", 4) == 0)) {
 					sys.tell(fd, buf);
 				}
-				if (states[fd]>=3){
+				else if (states[fd] == 3 && (strncmp(buf, "mail", 4) == 0)) {
+					Email *email = new Email();
+					if (sys.send_mail_1(fd,buf,email)) {
+						states[fd] = 4;
+					}
+				}
+				if (states[fd]==3){
 					User *user = sys.findUserFd(fd);
 					user->writef("");
 				} 

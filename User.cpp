@@ -1,4 +1,5 @@
 #include "User.h"
+#include "Email.h"
 #include <cstring>
 #include <unistd.h>
 

@@ -151,22 +151,6 @@ void System::printAllUsers() const {
 }
 
 
-// void System::startAutoSave() {
-//     autoSaveThread = std::thread([this](){
-//         while (keepRunning.load()) {
-//             std::this_thread::sleep_for(std::chrono::seconds(5));
-//             saveUserData();
-//         }
-//     });
-// }
-
-// void System::stopAutoSave() {
-//     keepRunning.store(false);
-//     if (autoSaveThread.joinable()) {
-//         autoSaveThread.join();
-//     }
-// }
-
 void System::saveUserData() {
     std::string filePath = "data/user";
     std::ofstream outFile(filePath, std::ofstream::trunc); // Open the file in truncate mode to overwrite
@@ -377,10 +361,6 @@ void System::tell(int fd, char* buf){
         writeLine(fd, "No such online user " + string(name));
         return;
     }
-    if (duser==nullptr || duser->login==false) {
-        writeLine(fd, "No such online user " + string(name));
-        return;
-    }
     User* user = findUserFd(fd);
     if (find(duser->blocked_names.begin(), duser->blocked_names.end(), user->username) != duser->blocked_names.end()) {
         writeLine(fd, "You have been blocked");
@@ -390,4 +370,34 @@ void System::tell(int fd, char* buf){
     string outmsg = string(msg);
     rtrim(outmsg);
     writeLine(duser->sockId, outmsg);
+}
+int System::send_mail_1(int fd, char* buf, Email* email){
+    const char* delim = " ";
+    strtok(buf, delim);
+    char* name = strtok(NULL, delim);
+    if (name == NULL) {
+        writeLine(fd, "Please enter information as mail <name> <tittle>");
+        return 1;
+    }
+    User* duser = findUser(string(name));
+    if (duser==nullptr) {
+        writeLine(fd, "No such user " + string(name));
+        return 1;
+    }
+    User* user = findUserFd(fd);
+    if (find(duser->blocked_names.begin(), duser->blocked_names.end(), user->username) != duser->blocked_names.end()) {
+        writeLine(fd, "You have been blocked");
+        return 1;
+    }
+    char* msg = name + strlen(name) + 1;
+    string tittle = string(msg);
+    rtrim(tittle);
+    if(tlttle.length()==0){
+        tittle = "No tittle";
+    }
+    email->tittle = tittle;
+    email->send_name = user->username;
+    email->rec_name = duser->username;
+    writeLine(user->sockId, "Please input mail body, finishing with '.' at the beginning of a line");
+    return 0;
 }

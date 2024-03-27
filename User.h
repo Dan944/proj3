@@ -1,6 +1,7 @@
 #ifndef USER_H
 #define USER_H
 
+#include "Email.h"
 #include <string>
 #include <vector>
 #include <sstream>
@@ -26,19 +27,7 @@ public:
 	int loss;
     int cmd;
     std::vector<std::string> blocked_names;
-    // : username(username), 
-    //   password(password),
-    //   id(id), // Assuming default id is 0 or an appropriate default value
-    //   sockId(-1), // -1 often used to indicate an invalid socket id
-    //   information(""),
-    //   rating(0.0), // Assuming default rating is 0.0 or an appropriate default value
-    //   quiet(false),
-    //   login(false),
-    //   observeId(""),
-    //   playId(""),
-    //   win(0),
-    //   loss(0),
-    //   cmd(0) 
+    std::vector<Email*> emails;
 
     static std::vector<User*> allUsers;
     static User* findUser(const std::string& username);

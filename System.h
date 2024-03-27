@@ -44,6 +44,7 @@ public:
     void block(int fd, char* buf);
     void unblock(int fd, char* buf);
     void tell(int fd, char* buf);
+    int send_mail_1(int fd, char*buf, Email* email);
 
     // std::atomic<bool> keepRunning;
     // std::thread autoSaveThread;
