@@ -20,7 +20,9 @@
   passwd \<new>\
   block \<name>\
   unblock \<name>\
-  tell \<name> \<msg>
+  tell \<name> \<msg>\
+  mail \<id> \<title>\
+  readmail \<msg_num>
 
 ## 未完成
   game\
@@ -33,7 +35,5 @@
   kibitz \<msg>\
   ’ \<msg>\
   listmail\
-  readmail \<msg_num>\
-  deletemail \<msg_num>\
-  mail \<id> \<title>\
+  deletemail \<msg_num>
 
