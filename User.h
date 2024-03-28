@@ -28,6 +28,7 @@ public:
     int cmd;
     std::vector<std::string> blocked_names;
     std::vector<Email*> emails;
+    Email* current_email;
 
     static std::vector<User*> allUsers;
     static User* findUser(const std::string& username);

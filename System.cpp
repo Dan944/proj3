@@ -371,23 +371,23 @@ void System::tell(int fd, char* buf){
     rtrim(outmsg);
     writeLine(duser->sockId, outmsg);
 }
-int System::send_mail_1(int fd, char* buf, Email* email){
+int System::send_mail_1(int fd, char* buf){
     const char* delim = " ";
     strtok(buf, delim);
     char* name = strtok(NULL, delim);
     if (name == NULL) {
         writeLine(fd, "Please enter information as mail <name> <tittle>");
-        return 1;
+        return 0;
     }
     User* duser = findUser(string(name));
     if (duser==nullptr) {
         writeLine(fd, "No such user " + string(name));
-        return 1;
+        return 0;
     }
     User* user = findUserFd(fd);
     if (find(duser->blocked_names.begin(), duser->blocked_names.end(), user->username) != duser->blocked_names.end()) {
         writeLine(fd, "You have been blocked");
-        return 1;
+        return 0;
     }
     char* msg = name + strlen(name) + 1;
     string tittle = string(msg);
@@ -395,9 +395,58 @@ int System::send_mail_1(int fd, char* buf, Email* email){
     if(tittle.length()==0){
         tittle = "No tittle";
     }
+    Email *email = new Email();
     email->tittle = tittle;
     email->send_name = user->username;
     email->rec_name = duser->username;
+    user->current_email=email;
     writeLine(user->sockId, "Please input mail body, finishing with '.' at the beginning of a line");
-    return 0;
+
+    return 1;
+}
+
+int System::send_mail_2(int fd, char* buf){
+    User* user = findUserFd(fd);
+    if (strncmp(buf,".",1)==0) {
+        user->current_email->send_time = time(0);
+        User* duser = findUser(user->current_email->rec_name);
+        duser->emails.push_back(user->current_email);
+        writeLine(fd, "Send successfully.");
+        // writeLine(fd, "tittle:");
+        // writeLine(fd, user->current_email->tittle);
+        // writeLine(fd, "time:");
+        // time_t otime = user->current_email->send_time;
+        // writeLine(fd, string(ctime(&otime)));
+        // writeLine(fd, "body:");
+        // writeLine(fd, user->current_email->content);
+
+        if (duser->login == true) {
+            writeLine(duser->sockId,"You have received a new email");
+        }
+        //savemail()
+        return 1;
+    }
+    else {
+        user->current_email->content += string(buf);
+        return 0;
+    }
+}
+
+void System::list_mail(int fd, char* buf){
+    User* user = findUserFd(fd);
+    if (user->emails.size()==0) {
+        writeLine(fd, "You have no messages.");
+    }
+    else {
+        writeLine(fd, "Your messages:");
+        int count = 0;
+        for (auto& email : user->emails) {
+            const char* read = email->read ? "Read" : "New";
+            char line[1024];
+            sprintf(line, "  %i  %s  %s  %s  %s",count,read,email->send_name.c_str(),email->tittle.c_str(),
+                ctime(&(email->send_time)));
+            writeLine(fd, line);
+            count++;
+        }
+    }
 }

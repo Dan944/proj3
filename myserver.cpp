@@ -306,10 +306,17 @@ void start_server(char* port) {
 					sys.tell(fd, buf);
 				}
 				else if (states[fd] == 3 && (strncmp(buf, "mail", 4) == 0)) {
-					Email *email = new Email();
-					if (sys.send_mail_1(fd,buf,email)) {
+					if (sys.send_mail_1(fd,buf)) {
 						states[fd] = 4;
 					}
+				}
+				else if(states[fd] == 4){
+					if (sys.send_mail_2(fd,buf)) {
+						states[fd] = 3;
+					}			
+				}	
+				else if (states[fd] == 3 && (strncmp(buf, "listmail", 8) == 0)) {
+					sys.list_mail(fd,buf);
 				}
 				if (states[fd]==3){
 					User *user = sys.findUserFd(fd);
