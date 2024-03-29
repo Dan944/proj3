@@ -423,7 +423,7 @@ int System::send_mail_2(int fd, char* buf){
         if (duser->login == true) {
             writeLine(duser->sockId,"You have received a new email");
         }
-        //savemail()
+        saveMailData();
         return 1;
     }
     else {
@@ -449,4 +449,61 @@ void System::list_mail(int fd, char* buf){
             count++;
         }
     }
+}
+
+void System::read_mail(int fd, char* buf){
+    User *user = findUserFd(fd);
+    char* token = strtok(buf, " ");
+    token = strtok(NULL, " ");
+    if (user->emails.size()==0) {
+        writeLine(fd, "You have no messages.");
+        return;
+    }
+    if (token != NULL) {
+        int mail_id = stoi(token);
+        if (mail_id > int(user->emails.size())){
+            writeLine(fd, "Message number invalid");
+            return;
+        }
+        Email *email = user->emails[mail_id];
+        char mail_str[2048];
+        sprintf(mail_str,"From: %s\nTitle:  %s\nTime: %s\n%s\n",email->send_name.c_str(),email->tittle.c_str(),
+            ctime(&(email->send_time)),email->content.c_str());
+        writeLine(fd, string(mail_str));
+        user->emails[mail_id]->read=true;
+        saveMailData();
+        return;
+    }
+    else {
+        writeLine(fd,"Please enter information as readmail <mail id>");
+        return;
+    }
+}
+
+void System::delete_mail(int fd, char* buf){
+    User *user = findUserFd(fd);
+    char* token = strtok(buf, " ");
+    token = strtok(NULL, " ");
+    if (user->emails.size()==0) {
+        writeLine(fd, "You have no messages.");
+        return;
+    }
+    if (token != NULL) {
+        int mail_id = stoi(token);
+        if (mail_id > int(user->emails.size())){
+            writeLine(fd, "Message number invalid");
+            return;
+        }
+        user->emails.erase(user->emails.begin()+mail_id);
+        writeLine(fd, "sucessfully delete");
+        saveMailData();
+        return;
+    }
+    else {
+        writeLine(fd,"Please enter information as deletemail <mail id>");
+        return;
+    }
+}
+void System::saveMailData(){
+
 }

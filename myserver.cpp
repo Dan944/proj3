@@ -317,6 +317,12 @@ void start_server(char* port) {
 				}	
 				else if (states[fd] == 3 && (strncmp(buf, "listmail", 8) == 0)) {
 					sys.list_mail(fd,buf);
+				}	
+				else if (states[fd] == 3 && (strncmp(buf, "readmail", 8) == 0)) {
+					sys.read_mail(fd,buf);
+				}	
+				else if (states[fd] == 3 && (strncmp(buf, "deletemail", 10) == 0)) {
+					sys.delete_mail(fd,buf);
 				}
 				if (states[fd]==3){
 					User *user = sys.findUserFd(fd);

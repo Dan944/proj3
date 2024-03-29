@@ -47,6 +47,9 @@ public:
     int send_mail_1(int fd, char*buf);
     int send_mail_2(int fd, char*buf);
     void list_mail(int fd, char*buf);
+    void read_mail(int fd, char*buf);
+    void delete_mail(int fd, char*buf);
+    void saveMailData(); 
 
     // std::atomic<bool> keepRunning;
     // std::thread autoSaveThread;
