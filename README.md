@@ -22,7 +22,9 @@
   unblock \<name>\
   tell \<name> \<msg>\
   mail \<id> \<title>\
-  readmail \<msg_num>
+  readmail \<msg_num>\
+  listmail\
+  deletemail \<msg_num>
 
 ## 未完成
   game\
@@ -33,7 +35,5 @@
   resign\
   refresh\
   kibitz \<msg>\
-  ’ \<msg>\
-  listmail\
-  deletemail \<msg_num>
+  ’ \<msg>
 
