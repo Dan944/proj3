@@ -1,5 +1,6 @@
 #include "System.h"
 #include "User.h"
+#include "Email.h"
 #include <iostream>
 #include <fstream>
 #include <sstream>
@@ -13,26 +14,6 @@
 #include <string>
 
 using namespace std;
-time_t stringToTimeT(const std::string& timeString) {
-    struct tm tm;
-    memset(&tm, 0, sizeof(struct tm));
-
-    // Parse the date string
-    if (strptime(timeString.c_str(), "%a %b %d %H:%M:%S %Y", &tm) == nullptr) {
-        cerr <<"string can not be processed:"<< timeString<<endl;
-        cerr << "Failed to parse date" << endl;
-        return static_cast<time_t>(-1); // Return an error value
-    }
-
-    // Convert tm structure to time_t
-    time_t time = mktime(&tm);
-    if (time == -1) {
-        cerr << "Failed to convert to time_t" << endl;
-    }
-    
-    return time;
-}
-
 // Gets all usernames from the system's user list
 std::vector<std::string> System::getAllUsers() {
     std::vector<std::string> usernames;
@@ -172,6 +153,22 @@ void System::printAllUsers() const {
 }
 
 
+// void System::startAutoSave() {
+//     autoSaveThread = std::thread([this](){
+//         while (keepRunning.load()) {
+//             std::this_thread::sleep_for(std::chrono::seconds(5));
+//             saveUserData();
+//         }
+//     });
+// }
+
+// void System::stopAutoSave() {
+//     keepRunning.store(false);
+//     if (autoSaveThread.joinable()) {
+//         autoSaveThread.join();
+//     }
+// }
+
 void System::saveUserData() {
     std::string filePath = "data/user";
     std::ofstream outFile(filePath, std::ofstream::trunc); // Open the file in truncate mode to overwrite
@@ -257,8 +254,8 @@ void System::help(int fd){
         "  ' <msg>                 # Comment on a game\n"
         "  quiet                   # Quiet mode, no broadcast messages\n"
         "  nonquiet                # Non-quiet mode\n"
-        "  block <name>            # No more communication from <name>\n"
-        "  unblock <name>          # Allow communication from <name>\n"
+        "  block <id>              # No more communication from <id>\n"
+        "  unblock <id>            # Allow communication from <id>\n"
         "  listmail                # List the header of the mails\n"
         "  readmail <msg_num>      # Read the particular mail\n"
         "  deletemail <msg_num>    # Delete the particular mail\n"
@@ -271,6 +268,7 @@ void System::help(int fd){
         "  ?                       # print this message";
     writeLine(fd, helps);
 }
+
 void System::info(int fd, char* buf){
     char *token = strchr(buf, ' '); 
     if (token != NULL) {
@@ -286,6 +284,26 @@ void System::info(int fd, char* buf){
     else {
         writeLine(fd,"Please enter information as info <msg>");
     }
+}
+
+time_t stringToTimeT(const std::string& timeString) {
+    struct tm tm;
+    memset(&tm, 0, sizeof(struct tm));
+
+    // Parse the date string
+    if (strptime(timeString.c_str(), "%a %b %d %H:%M:%S %Y", &tm) == nullptr) {
+        cerr <<"string can not be processed:"<< timeString<<endl;
+        cerr << "Failed to parse date" << endl;
+        return static_cast<time_t>(-1); // Return an error value
+    }
+
+    // Convert tm structure to time_t
+    time_t time = mktime(&tm);
+    if (time == -1) {
+        cerr << "Failed to convert to time_t" << endl;
+    }
+    
+    return time;
 }
 
 void System::shout(int fd, char* buf) {
@@ -310,6 +328,7 @@ void System::shout(int fd, char* buf) {
         writeLine(fd,"Please enter information as shout <msg>");
     }
 }
+
 void System::passwd(int fd, char* buf){
     User *user = findUserFd(fd);
     char* token = strtok(buf, " ");
@@ -325,6 +344,7 @@ void System::passwd(int fd, char* buf){
         writeLine(fd,"Please enter information as passwd <pwd>");
     }
 }
+
 void System::block(int fd, char* buf){
     User *user = findUserFd(fd);
     char* token = strtok(buf, " ");
@@ -349,6 +369,7 @@ void System::block(int fd, char* buf){
         writeLine(fd,"Please enter information as block <name>");
     }
 }
+
 void System::unblock(int fd, char* buf){
     User *user = findUserFd(fd);
     char* token = strtok(buf, " ");

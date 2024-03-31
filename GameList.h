@@ -16,6 +16,7 @@ class GameList {
 public:
     GameStatus status;            // Status of the game
     int gameID;                   // Unique identifier for the game
+    // int requestResult;            // 0 is refused,1 is accepted
     User player1;                 // First player
     User player2;                 // Second player
     std::vector<User> observers;  // List of observers watching the game

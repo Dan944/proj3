@@ -19,6 +19,7 @@
 #include "User.h"
 #include "System.h"
 #include "ChatInfo.h"
+#include "Request.h"
 // #include "GameList.h"
 #include "GameRecall.h"
 
@@ -57,8 +58,29 @@ void writeLine(int socketId, const string line) {
     write(socketId, temp.c_str(), temp.size());
 }
 
-System sys;
+std::string readLine(int socketId) {
+    std::string line;
+    char buffer;
+    ssize_t bytesRead;
 
+    // Continuously read one character from the socket
+    while ((bytesRead = read(socketId, &buffer, 1)) > 0) {
+        // Check for newline character, indicating end of line
+        if (buffer == '\n') {
+            break; // Exit the loop since we've reached the end of the line
+        }
+        line += buffer;
+    }
+
+    // Check for errors
+    if (bytesRead < 0) {
+        std::cerr << "Error reading from socket." << std::endl;
+    }
+
+    return line; 
+}
+System sys;
+Request req;
 
 void login(int rec_sock, string username, string password) {
 	char buf[1024] = "username(guest):";
@@ -113,6 +135,24 @@ void print_hello(int rec_sock) {
 	write(rec_sock, buf, strlen(buf));
 }
 
+void playerQuits(std::vector<GameRecall*> gameList ,User* quitPlayer) {
+    for (auto& game : gameList) {
+        if (game->player1 == quitPlayer || game->player2 == quitPlayer) {
+            User* winner = (game->player1 == quitPlayer) ? game->player2 : game->player1;
+
+			std::cout << winner->getUsername() << " wins because the other player quit the game." << std::endl;
+			game->isGameOver = true;
+            // Declare the other player as the winner
+			std::string winMessage = "Player " + winner->getUsername() + " wins because " + quitPlayer->getUsername() + " quit the game.";
+    		writeLine(winner->getSockId(), winMessage); // Or send this message to both players
+			game->player1->setState(User::Idle);
+   			game->player2->setState(User::Idle);
+            
+            break;
+        }
+    }
+}
+
 void start_server(char* port) {
 	int sockfd, rec_sock;
 	socklen_t len;
@@ -122,6 +162,8 @@ void start_server(char* port) {
 	char buf[100];
 	fd_set allset, rset;
 	int maxfd;
+	std::vector<GameRecall*> gameList;
+	std::vector<Request*> requestList;
 
 	abc.sa_handler = sig_chld;
 	sigemptyset(&abc.sa_mask);
@@ -164,6 +206,7 @@ void start_server(char* port) {
 		rset = allset;
 		select(maxfd+1, &rset, NULL, NULL, NULL);
 		// printf("FD_ISSET[%d]\n",FD_ISSET(sockfd, &rset));
+
 		if (FD_ISSET(sockfd, &rset)) {
 			/* somebody tries to connect */
 			// printf("I am ISSET before accept\n");
@@ -202,7 +245,7 @@ void start_server(char* port) {
 					itr = sock_vector.erase(itr);
 					continue;
 				} //quit
-				if ((states[fd]==-1 || strncmp(buf, "quit", 4) == 0 || strncmp(buf, "exit", 4) == 0)&&states[fd]!=4) {
+				if (states[fd]==-1 || strncmp(buf, "quit", 4) == 0 || strncmp(buf, "exit", 4) == 0) {
 					// printf("gogoin: %s\n",buf);
 					// printf("Client sent 'quit'. Closing connection.\n");
 					printf("close socket [%d]\n",fd);
@@ -213,6 +256,7 @@ void start_server(char* port) {
 					if (user != nullptr) {
 						user->logout();
 					}
+					playerQuits(gameList,user);
 					states[fd] = 0;
 					itr = sock_vector.erase(itr);
 					continue;
@@ -324,8 +368,159 @@ void start_server(char* port) {
 				else if (states[fd] == 3 && (strncmp(buf, "deletemail", 10) == 0)) {
 					sys.delete_mail(fd,buf);
 				}
-				else {
-					writeLine(fd,"not support this command, please enter help or ? for detail");
+				else if (states[fd] == 3 && strncmp(buf, "match", 5) == 0) {
+                    std::string command(buf);
+                    size_t start = command.find('<');
+                    size_t end = command.find('>');
+
+                    if (start != std::string::npos && end != std::string::npos && start < end) {
+                        // Extract substring between < and >, ensuring it follows "match <username>" format
+                        std::string matchUsername = command.substr(start + 1, end - start - 1);
+                        User* matchUser = sys.findUser(matchUsername);
+                        User* requestingUser = sys.findUserFd(fd);
+
+                        if (matchUser == nullptr) {
+                            sys.writeLine(fd, "Match user does not exist.");
+                        } else if (requestingUser == matchUser) {
+                            sys.writeLine(fd, "You cannot match with yourself.");
+                        } else if (matchUser->getState() == User::InMatch) {
+							sys.writeLine(fd, "Match User is in Match.");
+						} else if (requestingUser->getState() == User::InMatch) {
+							sys.writeLine(fd, "You are on the game now.");
+						} else {
+							if (matchUser->isLogin()){
+								Request *r_quest = req.isMatchUserFromUser(requestList, matchUser);
+								if (r_quest != nullptr) {
+									printf("r_quest is not nullptr!!!!\n");
+									requestingUser = r_quest->getFromUser();
+									matchUser = r_quest->getToUser();
+									std::cout << "From User : " << requestingUser->getUsername() << endl;
+									std::cout << "To User : " << matchUser->getUsername() << endl;
+									int matchUserID = matchUser->getSockId();
+									GameRecall *gr = new GameRecall();
+									matchUser->setState(User::InMatch);
+									requestingUser->setState(User::InMatch);
+									int g_id = gameList.size() + 1;
+									GameRecall *game_one = gr->handleMatchRequest(matchUserID, matchUser, requestingUser, g_id);
+									gameList.push_back(game_one);
+									auto it = std::find(requestList.begin(), requestList.end(), r_quest);
+									if (it != requestList.end()) {
+										// Delete the request object to avoid memory leak
+										delete *it; 
+										// Erase the pointer from the vector
+										requestList.erase(it);
+									}
+									std::string boardState = gr->getBoardAsString();
+									sys.writeLine(game_one->player1->getSockId(),boardState);
+									sys.writeLine(game_one->player2->getSockId(),boardState);
+									game_one->player2->writef("");
+								} else {
+									printf("r_quest is nullptr!!!!");
+									sys.writeLine(fd, "Your requirement has been sent.");
+									std::string matchRequest = "Match request from " + requestingUser->getUsername();
+									int matchUserID = matchUser->getSockId();
+									sys.writeLine(matchUserID, matchRequest);
+									matchUser->writef("");
+									Request *rq = new Request(requestingUser,matchUser,Request::RequestGenerated);
+									requestList.push_back(rq);
+								}
+							} else {
+								sys.writeLine(fd, "The User is offline.");
+							}
+                        }
+                    } else {
+                        sys.writeLine(fd, "Invalid command format. Use 'match <username>'.");
+                    }
+                }
+				else if(states[fd] == 3 && sys.findUserFd(fd)->getState() == User::InMatch){
+					User *user = sys.findUserFd(fd);
+					GameRecall *game_one = gameList[user->getCurrentGameID() - 1];
+					if (user->getState() == User::InMatch){
+						if (fd == game_one->player1->getSockId()){
+							if(game_one->currentPlayer == false){
+								printf("turn1 go in\n");
+								std::string bufStr(buf); // Convert C-style string to std::string
+								sys.rtrim(bufStr);
+								if (game_one->addMove(1,bufStr)) {
+									std::string boardState = game_one->getBoardAsString();
+									sys.writeLine(game_one->player2->getSockId(),"");
+									sys.writeLine(game_one->player1->getSockId(),"Wait for your turn.");
+									sys.writeLine(game_one->player2->getSockId(),"It's your turn.");
+									sys.writeLine(game_one->player1->getSockId(),boardState);
+									sys.writeLine(game_one->player2->getSockId(),boardState);
+									game_one->player2->writef("");
+								} else {
+									// Invalid move. Inform the current player.
+									sys.writeLine(fd, "Invalid move. Please try again.");
+								}
+								// turn = 2;
+
+								std::cout << "isWin : " << game_one->isWin(1) << endl;
+								if (game_one->isWin(1)) {
+									sys.writeLine(game_one->player1->getSockId(), "You win!");
+									sys.writeLine(game_one->player2->getSockId(), "You lose.");
+									game_one->player2->writef("");
+									game_one->isGameOver = true;
+								}
+
+								if (game_one->isDraw() == true){
+									sys.writeLine(game_one->player1->getSockId(), "It's a draw.");
+									sys.writeLine(game_one->player2->getSockId(), "It's a draw.");
+									game_one->player2->writef("");
+									game_one->isGameOver = true;
+								}
+
+								if (game_one->isGameOver == true){
+									printf("GameOver\n");
+									game_one->player1->setState(User::Idle);
+									game_one->player2->setState(User::Idle);
+								}
+							} else {
+								sys.writeLine(game_one->player1->getSockId(),"It's not Your turn.");
+							}
+						} else if (fd == game_one->player2->getSockId()){
+							if(game_one->currentPlayer == true){
+								printf("turn2 go in\n");
+								std::string bufStr(buf); // Convert C-style string to std::string
+								sys.rtrim(bufStr);
+								if (game_one->addMove(2,bufStr)){
+									std::string boardState = game_one->getBoardAsString();
+									sys.writeLine(game_one->player1->getSockId(),"");
+									sys.writeLine(game_one->player1->getSockId(),"It's your turn.");
+									sys.writeLine(game_one->player2->getSockId(),"Wait for your turn.");
+									sys.writeLine(game_one->player1->getSockId(),boardState);
+									sys.writeLine(game_one->player2->getSockId(),boardState);
+									game_one->player1->writef("");
+								} else {
+									// Invalid move. Inform the current player.
+									sys.writeLine(fd, "Invalid move. Please try again.");
+								}
+								// turn = 1;
+								
+								std::cout << "isWin : " << game_one->isWin(2) << endl;
+								if (game_one->isWin(2)) {
+									sys.writeLine(game_one->player2->getSockId(), "You win!");
+									sys.writeLine(game_one->player1->getSockId(), "You lose.");
+									game_one->player1->writef("");
+									game_one->isGameOver = true;
+								}
+
+								if (game_one->isDraw() == true){
+									sys.writeLine(game_one->player1->getSockId(), "It's a draw.");
+									sys.writeLine(game_one->player2->getSockId(), "It's a draw.");
+									game_one->player1->writef("");
+									game_one->isGameOver = true;
+								}
+
+								if (game_one->isGameOver == true){
+									game_one->player1->setState(User::Idle);
+									game_one->player2->setState(User::Idle);
+								}
+							} else { 
+								sys.writeLine(game_one->player2->getSockId(),"It's not Your turn.");
+							}
+						}
+					}
 				}
 				if (states[fd]==3){
 					User *user = sys.findUserFd(fd);

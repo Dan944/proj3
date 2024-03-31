@@ -13,6 +13,16 @@
 class User {
 
 public:
+
+    enum State {
+        Idle,
+        LoggedIn,
+        AwaitingMatch,
+        MatchAcceptance, // The state we're focused on
+        InMatch,
+        // Add other states as needed
+    };
+
     std::string username; 
     std::string password;
     int id;
@@ -27,8 +37,23 @@ public:
 	int loss;
     int cmd;
     std::vector<std::string> blocked_names;
+    User::State currentState;
+    int currentGameID;
     std::vector<Email*> emails;
     Email* current_email;
+    // : username(username), 
+    //   password(password),
+    //   id(id), // Assuming default id is 0 or an appropriate default value
+    //   sockId(-1), // -1 often used to indicate an invalid socket id
+    //   information(""),
+    //   rating(0.0), // Assuming default rating is 0.0 or an appropriate default value
+    //   quiet(false),
+    //   login(false),
+    //   observeId(""),
+    //   playId(""),
+    //   win(0),
+    //   loss(0),
+    //   cmd(0) 
 
     static std::vector<User*> allUsers;
     static User* findUser(const std::string& username);
@@ -50,6 +75,8 @@ public:
     int getLoss() const;
     int getId() const;
     int getcmd() const;
+    State getState() const;
+    int getCurrentGameID() const;
 
     // Setters
     void setUsername(const std::string& val);
@@ -66,6 +93,8 @@ public:
     void setLoss(int val);
     void setId(int val);
     void setcmd(int cmd);
+    void setState(State newState);
+    void setCurrentGameID(int val);
 
     User(std::string username, std::string password);
 	User();

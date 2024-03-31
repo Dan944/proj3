@@ -1,7 +1,7 @@
 #include "User.h"
-#include "Email.h"
 #include <cstring>
 #include <unistd.h>
+#include <chrono>
 
 std::vector<User*> User::allUsers;
 
@@ -19,7 +19,7 @@ User::User(std::string username, std::string password)
     rating(0.0), // Assuming default rating is 0.0 or an appropriate default value
     win(0),
     loss(0),
-    cmd(0) 
+    cmd(0)
 { 
     
 }
@@ -74,6 +74,8 @@ int User::getWin() const { return win; }
 int User::getLoss() const { return loss; }
 int User::getId() const { return id; }
 int User::getcmd() const { return cmd;}
+User::State User::getState() const { return currentState; }
+int User::getCurrentGameID() const {return currentGameID; }
 
 // Setters
 void User::setUsername(const std::string& val) { username = val; }
@@ -90,3 +92,5 @@ void User::setWin(int val) { win = val; }
 void User::setLoss(int val) { loss = val; }
 void User::setId(int val) { id = val; }
 void User::setcmd(int val) { cmd = val; }
+void User::setState( User::State newState) { currentState = newState; }
+void User::setCurrentGameID(int val) { currentGameID = val; }
