@@ -13,6 +13,26 @@
 #include <string>
 
 using namespace std;
+time_t stringToTimeT(const std::string& timeString) {
+    struct tm tm;
+    memset(&tm, 0, sizeof(struct tm));
+
+    // Parse the date string
+    if (strptime(timeString.c_str(), "%a %b %d %H:%M:%S %Y", &tm) == nullptr) {
+        cerr <<"string can not be processed:"<< timeString<<endl;
+        cerr << "Failed to parse date" << endl;
+        return static_cast<time_t>(-1); // Return an error value
+    }
+
+    // Convert tm structure to time_t
+    time_t time = mktime(&tm);
+    if (time == -1) {
+        cerr << "Failed to convert to time_t" << endl;
+    }
+    
+    return time;
+}
+
 // Gets all usernames from the system's user list
 std::vector<std::string> System::getAllUsers() {
     std::vector<std::string> usernames;
@@ -31,6 +51,7 @@ void System::rtrim(std::string &s) {
 // Initializes the system, possibly by loading user data
 void System::init() {
     load_user();
+    load_mail();
 }
 
 void System::writeLine(int socketId, const std::string line) {
@@ -443,9 +464,9 @@ void System::list_mail(int fd, char* buf){
         for (auto& email : user->emails) {
             const char* read = email->read ? "Read" : "New";
             char line[1024];
-            sprintf(line, "  %i  %s  %s  %s  %s",count,read,email->send_name.c_str(),email->tittle.c_str(),
+            sprintf(line, "  %i  %s  %s  '%s'  %s",count,read,email->send_name.c_str(),email->tittle.c_str(),
                 ctime(&(email->send_time)));
-            writeLine(fd, line);
+            write(fd, line, strlen(line));
             count++;
         }
     }
@@ -505,5 +526,65 @@ void System::delete_mail(int fd, char* buf){
     }
 }
 void System::saveMailData(){
+    string rootPath = "data/mails/";
+    for (auto& user : allUsers) {
+        if (user->emails.size()==0) {
+            continue;
+        }
+        string filePath=rootPath+user->username;
+        ofstream outFile(filePath, ofstream::trunc);
+        if (!outFile.is_open()) {
+            std::cerr << "Failed to open file for writing: " << filePath << endl;
+            continue;
+        }
+        for (auto& email : user->emails){
+            rtrim(email->content);
+            outFile << email->tittle << endl
+                    << email->send_name << endl
+                    << email->rec_name << endl
+                    << string(ctime(&(email->send_time)))
+                    << string(email->read ? "Read" : "New") << endl
+                    << email->content <<endl<< "." <<endl;
+        }
 
+        outFile.close();
+        cout << "Email data saved successfully." << endl;
+        }
+}
+void System::load_mail(){
+    string rootPath = "data/mails/";
+    for (auto& user : allUsers) {
+        string filePath=rootPath+user->username;
+        ifstream file(filePath);
+        if (!file.is_open()) {
+            continue;
+        }
+        string line;
+        int count = 0;
+        Email *email = new Email();
+        while (getline(file, line)){
+            if (count == 0) { email->tittle = line;}
+            else if (count == 1) { email->send_name = line;}
+            else if (count == 2) { email->rec_name = line;}
+            else if (count == 3) { email->send_time = stringToTimeT(line);}
+            else if (count == 4) { istringstream(line)>>boolalpha>>email->read;}
+            else if (line == ".") { 
+                count=0;
+                Email *mail = new Email();
+                mail->tittle = email->tittle;
+                mail->send_name = email->send_name;
+                mail->rec_name = email->rec_name;
+                mail->send_time = email->send_time;
+                mail->read = email->read;
+                mail->content = email->content;
+                user->emails.push_back(mail);
+                continue;
+            }
+            else {
+                email->content += line;
+            }
+            count++;
+        }
+        file.close();
+    }
 }
