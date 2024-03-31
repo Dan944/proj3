@@ -50,6 +50,7 @@ public:
     void read_mail(int fd, char*buf);
     void delete_mail(int fd, char*buf);
     void saveMailData(); 
+    void load_mail();
 
     // std::atomic<bool> keepRunning;
     // std::thread autoSaveThread;
