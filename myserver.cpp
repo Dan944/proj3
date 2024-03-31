@@ -324,6 +324,9 @@ void start_server(char* port) {
 				else if (states[fd] == 3 && (strncmp(buf, "deletemail", 10) == 0)) {
 					sys.delete_mail(fd,buf);
 				}
+				else {
+					writeLine(fd,"not support this command, please enter help or ? for detail");
+				}
 				if (states[fd]==3){
 					User *user = sys.findUserFd(fd);
 					user->writef("");
