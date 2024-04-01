@@ -2,6 +2,10 @@
 #include "System.h"
 #include <chrono>
 #include <unistd.h>
+#include <algorithm>
+#include <cctype>
+#include <vector>
+#include <string>
 
 GameRecall::GameRecall()
 {
@@ -158,6 +162,14 @@ void GameRecall::endGame(int mod) {
         isGameOver = true;
     }
     playOB();
+    for ( User* user :observers)
+    {
+        auto it = std::find(user->obGameID.begin(), user->obGameID.end(), gameID);
+        if (it != user->obGameID.end()) {
+            user->obGameID.erase(it); // Correctly erase gameID from user->obGameID
+        }
+    }
+    
 }
 
 void GameRecall::playOB() {
