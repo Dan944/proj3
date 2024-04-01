@@ -27,15 +27,15 @@
   deletemail \<msg_num>\
   game\
   observe \<game_num>\
-  unobserve
+  unobserve\
+  kibitz \<msg>\
+  ’ \<msg>
 
 ## 未完成
   match \<name> \<b|w> [t]\
   \<A|B|C>\<1|2|3>\
   resign\
   refresh\
-  kibitz \<msg>\
-  ’ \<msg>
 
 ## 紧急
   <>\
