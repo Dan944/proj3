@@ -844,11 +844,10 @@ void System::unobserve(int fd, char*buf,vector<GameRecall*> &gameList){
     }
     char* token = strtok(buf, " ");
     token = strtok(NULL, " ");
-    if (token == NULL) {
-        writeLine(fd,"Please enter unobserve <game_num>");
-        return;
+    int game_num = 0;
+    if (token != NULL) {
+        game_num = stoi(token);
     }
-    int game_num = stoi(token);
     if (game_num >= 0 && game_num <= int(user->obGameID.size())) {
         auto it = find(gameList[game_num]->observers.begin(), gameList[game_num]->observers.end(), user);
         if (it != gameList[game_num]->observers.end()){
