@@ -24,12 +24,12 @@
   mail \<id> \<title>\
   readmail \<msg_num>\
   listmail\
+  deletemail \<msg_num>\
   game\
-  deletemail \<msg_num>
+  observe \<game_num>\
+  unobserve
 
 ## 未完成
-  observe \<game_num>\
-  unobserve\
   match \<name> \<b|w> [t]\
   \<A|B|C>\<1|2|3>\
   resign\
