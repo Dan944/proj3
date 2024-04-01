@@ -1,6 +1,7 @@
 #include "GameRecall.h"
 #include "System.h"
 #include <chrono>
+#include <unistd.h>
 
 GameRecall::GameRecall()
 {
@@ -17,6 +18,7 @@ GameRecall::GameRecall(User* player1, User* player2, int id)
     start_Time = new std::time_t(std::time(nullptr)); // Initialize start time to now
     end_Time = nullptr; 
     std::memset(checkerboard, 0, sizeof(checkerboard));
+    move_step = 0;
 }
 
 bool GameRecall::addMove(int player, const std::string& move) {
@@ -34,6 +36,7 @@ bool GameRecall::addMove(int player, const std::string& move) {
         if (checkerboard[row][col] == 0) {
             checkerboard[row][col] = player; // Player 1 or 2
             // endTurn();
+            move_step++;
             currentPlayer = !currentPlayer; // Switch turn
             return true;
         } else {
@@ -125,6 +128,36 @@ bool GameRecall::isDraw() const {
     }
 
     return true;
+}
+void wrtel(int socketId, const std::string line) {
+    std::string temp = line + '\n';
+    write(socketId, temp.c_str(), temp.size());
+}
+
+void GameRecall::endGame(int mod) {
+    if (mod == 0){
+        wrtel(player1->getSockId(), "It's a draw.");
+        wrtel(player2->getSockId(), "It's a draw.");
+        player2->writef("");
+        isGameOver = true;
+    }
+    else if (mod == 1){
+        wrtel(player1->getSockId(), "You win!");
+        player1->win1();
+        wrtel(player2->getSockId(), "You lose.");
+        player2->loss1();
+        player2->writef("");
+        isGameOver = true;
+    }
+    else if (mod == 2){
+        wrtel(player2->getSockId(), "You win!");
+        player2->win1();
+        wrtel(player1->getSockId(), "You lose.");
+        player1->loss1();
+        player1->writef("");
+        isGameOver = true;
+    }
+
 }
 
 // void GameRecall::manageGame(int fd, GameRecall *game) {

@@ -94,3 +94,14 @@ void User::setId(int val) { id = val; }
 void User::setcmd(int val) { cmd = val; }
 void User::setState( User::State newState) { currentState = newState; }
 void User::setCurrentGameID(int val) { currentGameID = val; }
+
+
+void User::win1() { 
+    win++;
+    rating += 0.5;
+}
+
+void User::loss1() { 
+    loss++;
+    rating -= 0.5;
+}

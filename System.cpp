@@ -618,13 +618,17 @@ void System::load_mail(){
 }
 
 void System::match1(int fd, char* buf,vector<GameRecall*> &gameList,vector<Request*> &requestList,Request req){
-    std::string command(buf);
-    size_t start = command.find('<');
-    size_t end = command.find('>');
+    // std::string command(buf);
+    // size_t start = command.find('<');
+    // size_t end = command.find('>');
+    char* token = strtok(buf, " ");
+    token = strtok(NULL, " ");
 
-    if (start != std::string::npos && end != std::string::npos && start < end) {
+    if (token != NULL) {
         // Extract substring between < and >, ensuring it follows "match <username>" format
-        std::string matchUsername = command.substr(start + 1, end - start - 1);
+        // std::string matchUsername = command.substr(start + 1, end - start - 1);
+        string matchUsername = token;
+
         User* matchUser = findUser(matchUsername);
         User* requestingUser = findUserFd(fd);
 
@@ -674,11 +678,7 @@ void System::match1(int fd, char* buf,vector<GameRecall*> &gameList,vector<Reque
                     writeLine(matchUserID, matchRequest);
                     matchUser->writef("");
                     Request *rq = new Request(requestingUser,matchUser,Request::RequestGenerated);
-                    cout<<"********************************************"<<endl;
-                    cout<<"before len:"<<requestList.size()<<endl;
                     requestList.push_back(rq);
-                    cout<<"after len:"<<requestList.size()<<endl;
-                    cout<<"********************************************"<<endl;
                 }
             } else {
                 writeLine(fd, "The User is offline.");
@@ -714,23 +714,27 @@ void System::match2(int fd, char* buf, vector<GameRecall*> &gameList,vector<Requ
 
                 std::cout << "isWin : " << game_one->isWin(1) << endl;
                 if (game_one->isWin(1)) {
-                    writeLine(game_one->player1->getSockId(), "You win!");
-                    writeLine(game_one->player2->getSockId(), "You lose.");
-                    game_one->player2->writef("");
-                    game_one->isGameOver = true;
+                    game_one->endGame(1);
+                    auto it = std::find(gameList.begin(), gameList.end(), game_one);
+                    if (it != gameList.end()) {
+                        gameList.erase(it);
+                    }
                 }
-
                 if (game_one->isDraw() == true){
-                    writeLine(game_one->player1->getSockId(), "It's a draw.");
-                    writeLine(game_one->player2->getSockId(), "It's a draw.");
-                    game_one->player2->writef("");
-                    game_one->isGameOver = true;
+                    game_one->endGame(0);
+                    auto it = std::find(gameList.begin(), gameList.end(), game_one);
+                    if (it != gameList.end()) {
+                        gameList.erase(it);
+                    }
                 }
-
                 if (game_one->isGameOver == true){
                     printf("GameOver\n");
                     game_one->player1->setState(User::Idle);
                     game_one->player2->setState(User::Idle);
+                    auto it = std::find(gameList.begin(), gameList.end(), game_one);
+                    if (it != gameList.end()) {
+                        gameList.erase(it);
+                    }
                 }
             } else {
                 writeLine(game_one->player1->getSockId(),"It's not Your turn.");
@@ -756,26 +760,46 @@ void System::match2(int fd, char* buf, vector<GameRecall*> &gameList,vector<Requ
                 
                 std::cout << "isWin : " << game_one->isWin(2) << endl;
                 if (game_one->isWin(2)) {
-                    writeLine(game_one->player2->getSockId(), "You win!");
-                    writeLine(game_one->player1->getSockId(), "You lose.");
-                    game_one->player1->writef("");
-                    game_one->isGameOver = true;
+                    game_one->endGame(2);
+                    auto it = std::find(gameList.begin(), gameList.end(), game_one);
+                    if (it != gameList.end()) {
+                        gameList.erase(it);
+                    }
                 }
 
                 if (game_one->isDraw() == true){
-                    writeLine(game_one->player1->getSockId(), "It's a draw.");
-                    writeLine(game_one->player2->getSockId(), "It's a draw.");
-                    game_one->player1->writef("");
-                    game_one->isGameOver = true;
+                    game_one->endGame(0);
+                    auto it = std::find(gameList.begin(), gameList.end(), game_one);
+                    if (it != gameList.end()) {
+                        gameList.erase(it);
+                    }
                 }
-
                 if (game_one->isGameOver == true){
                     game_one->player1->setState(User::Idle);
                     game_one->player2->setState(User::Idle);
+                    auto it = std::find(gameList.begin(), gameList.end(), game_one);
+                    if (it != gameList.end()) {
+                        gameList.erase(it);
+                    }
                 }
             } else { 
                 writeLine(game_one->player2->getSockId(),"It's not Your turn.");
             }
         }
+    }
+}
+
+
+void System::game(int fd, char*buf,vector<GameRecall*> gameList){
+    char str1[128];
+    sprintf(str1,"Total %i game(s)",int(gameList.size()));
+    writeLine(fd, str1);
+    int count = 0;
+    for (auto& game : gameList) {
+        char str2[512];
+        sprintf(str2,"Game %i: %s .vs. %s, %i moves",count,game->player1->username.c_str(), 
+            game->player2->username.c_str(), game->move_step);
+        writeLine(fd, str2);
+        count++;
     }
 }

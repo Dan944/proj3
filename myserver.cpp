@@ -256,7 +256,7 @@ void start_server(char* port) {
 					if (user != nullptr) {
 						user->logout();
 					}
-					// playerQuits(gameList,user);
+					playerQuits(gameList,user);
 					states[fd] = 0;
 					itr = sock_vector.erase(itr);
 					continue;
@@ -368,12 +368,20 @@ void start_server(char* port) {
 				else if (states[fd] == 3 && (strncmp(buf, "deletemail", 10) == 0)) {
 					sys.delete_mail(fd,buf);
 				}
+				else if (states[fd] == 3 && strncmp(buf, "game", 4) == 0) {
+					sys.game(fd,buf,gameList);
+                }
 				else if (states[fd] == 3 && strncmp(buf, "match", 5) == 0) {
 					sys.match1(fd,buf,gameList,requestList,req);
                 }
-				else if(states[fd] == 3 && sys.findUserFd(fd)->getState() == User::InMatch){
+				else if(states[fd] == 3 && sys.findUserFd(fd)->getState() == User::InMatch && 
+					(strncmp(buf, "a", 1) == 0 || strncmp(buf, "b", 1) == 0 ||strncmp(buf, "c", 1) == 0)){
 					sys.match2(fd,buf,gameList,requestList);
 				}
+				// else if (states[fd] == 3 && (strncmp(buf, "kibitz", 5) == 0 || strncmp(buf, "?", 1) == 0 ) && 
+				// 	sys.findUserFd(fd)->getState() == User::InMatch) {
+				// 	sys.match1(fd,buf,gameList,requestList,req);
+                // }
 				if (states[fd]==3){
 					User *user = sys.findUserFd(fd);
 					user->writef("");

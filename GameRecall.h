@@ -7,6 +7,7 @@
 #include <ctime>
 #include <iostream>
 #include <chrono>
+#include <unistd.h>
 
 class GameRecall {
 public:
@@ -22,6 +23,7 @@ public:
     std::chrono::seconds timeLimit{600}; // 600 seconds = 10 minutes
     std::chrono::seconds player1TimeLeft{600};
     std::chrono::seconds player2TimeLeft{600};
+    int move_step;
 
     // Constructor
     GameRecall(User* player1, User* player2, int id);
@@ -56,6 +58,7 @@ public:
     bool isDraw() const;
     void startTurn();
     User* endTurn();
+    void endGame(int mod);
 };
 
 #endif // GAMERECALL_H

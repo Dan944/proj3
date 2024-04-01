@@ -95,6 +95,8 @@ public:
     void setcmd(int cmd);
     void setState(State newState);
     void setCurrentGameID(int val);
+    void win1();
+    void loss1();
 
     User(std::string username, std::string password);
 	User();
