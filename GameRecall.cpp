@@ -174,6 +174,9 @@ void GameRecall::endGame(int mod) {
 
 void GameRecall::playOB() {
     for(User* user : observers){
+        if (user->login == false){
+            continue;
+        }
         wrtel(user->sockId,"");
         wrtel(user->sockId,getBoardAsString());
         user->writef("");
