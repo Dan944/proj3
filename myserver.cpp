@@ -383,10 +383,9 @@ void start_server(char* port) {
 				else if (states[fd] == 3 && strncmp(buf, "unobserve", 9) == 0) {
 					sys.unobserve(fd,buf,gameList);
                 }
-				// else if (states[fd] == 3 && (strncmp(buf, "kibitz", 5) == 0 || strncmp(buf, "?", 1) == 0 ) && 
-				// 	sys.findUserFd(fd)->getState() == User::InMatch) {
-				// 	sys.match1(fd,buf,gameList,requestList,req);
-                // }
+				else if (states[fd] == 3 && (strncmp(buf, "kibitz", 6) == 0 || strncmp(buf, "'", 1) == 0 )) {
+					sys.kibitz(fd,buf,gameList);
+                }
 				if (states[fd]==3){
 					User *user = sys.findUserFd(fd);
 					user->writef("");
