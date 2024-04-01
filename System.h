@@ -11,6 +11,10 @@
 #include <chrono>
 #include <vector>
 #include <string>
+#include "ChatInfo.h"
+#include "Request.h"
+// #include "GameList.h"
+#include "GameRecall.h"
 
 using namespace std;
 
@@ -51,6 +55,10 @@ public:
     void delete_mail(int fd, char*buf);
     void saveMailData(); 
     void load_mail();
+    void playerQuits(std::vector<GameRecall*> gameList ,User* quitPlayer);
+    void match1(int fd, char*buf,vector<GameRecall*> &gameList,vector<Request*> &requestList,Request req);
+    void match2(int fd, char*buf,vector<GameRecall*> &gameList,vector<Request*> &requestList);
+
 
     // std::atomic<bool> keepRunning;
     // std::thread autoSaveThread;
