@@ -58,7 +58,7 @@ public:
     void match1(int fd, char*buf,vector<GameRecall*> &gameList,vector<Request*> &requestList,Request req);
     void match2(int fd, char*buf,vector<GameRecall*> &gameList,vector<Request*> &requestList);
     void game(int fd, char*buf,vector<GameRecall*> gameList);
-    void kibitz(int fd, char*buf);
+    void kibitz(int fd, char*buf, vector<GameRecall*> &gameList);
     void observe(int fd, char*buf, vector<GameRecall*> &gameList);
     void unobserve(int fd, char*buf, vector<GameRecall*> &gameList);
 
