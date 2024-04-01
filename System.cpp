@@ -324,7 +324,7 @@ void System::shout(int fd, char* buf) {
         User *user = findUserFd(fd);
         sprintf(msg,"!shout! *%s*: %s", user->username.c_str(), token);
         for (User* u : onlineUsers) {
-            if (u->quiet==false) {
+            if (u->quiet==false && find(u->blocked_names.begin(), u->blocked_names.end(), user->username) == u->blocked_names.end()) {
                 writeLine(u->sockId,string(msg));
             }
         }
@@ -858,5 +858,38 @@ void System::unobserve(int fd, char*buf,vector<GameRecall*> &gameList){
         }
     }
     writeLine(fd,"Invalid number");
+    
+}
+
+void System::kibitz(int fd, char*buf, vector<GameRecall*> &gameList){
+    User* user = findUserFd(fd);
+    if (user->obGameID.size()==0) {
+        writeLine(fd, "There is no observed game, you may use tell when not observing");
+        return;
+    }
+    char *token = strchr(buf, ' '); 
+    if (token != NULL) {
+        token++;
+        char *end = strchr(token, '\n');
+        if (end != NULL) {
+            *end = '\0';
+        }
+        char msg[100];
+        sprintf(msg,"kibitz *%s*: %s", user->username.c_str(), token);
+        for (GameRecall* game : gameList) {
+            for (int id : user->obGameID) {
+                if (id == game->gameID){
+                    for (User* duser: game->observers) {
+                        if (duser->quiet==false&& find(duser->blocked_names.begin(), duser->blocked_names.end(), user->username) == duser->blocked_names.end()) {
+                            writeLine(duser->sockId,string(msg));
+                        }
+                    }
+                }
+            }
+        }
+    }
+    else {
+        writeLine(fd,"Please enter information as shout <msg>");
+    }
     
 }
