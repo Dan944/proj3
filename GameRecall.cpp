@@ -157,7 +157,15 @@ void GameRecall::endGame(int mod) {
         player1->writef("");
         isGameOver = true;
     }
+    playOB();
+}
 
+void GameRecall::playOB() {
+    for(User* user : observers){
+        wrtel(user->sockId,"");
+        wrtel(user->sockId,getBoardAsString());
+        user->writef("");
+    }
 }
 
 // void GameRecall::manageGame(int fd, GameRecall *game) {

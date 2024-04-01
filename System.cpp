@@ -12,7 +12,6 @@
 #include <cctype>
 #include <vector>
 #include <string>
-#include "ChatInfo.h"
 #include "Request.h"
 // #include "GameList.h"
 #include "GameRecall.h"
@@ -705,6 +704,7 @@ void System::match2(int fd, char* buf, vector<GameRecall*> &gameList,vector<Requ
                     writeLine(game_one->player2->getSockId(),"It's your turn.");
                     writeLine(game_one->player1->getSockId(),boardState);
                     writeLine(game_one->player2->getSockId(),boardState);
+                    game_one->playOB();
                     game_one->player2->writef("");
                 } else {
                     // Invalid move. Inform the current player.
@@ -754,6 +754,7 @@ void System::match2(int fd, char* buf, vector<GameRecall*> &gameList,vector<Requ
                     writeLine(game_one->player2->getSockId(),"Wait for your turn.");
                     writeLine(game_one->player1->getSockId(),boardState);
                     writeLine(game_one->player2->getSockId(),boardState);
+                    game_one->playOB();
                     game_one->player1->writef("");
                 } else {
                     // Invalid move. Inform the current player.
@@ -808,4 +809,55 @@ void System::game(int fd, char*buf,vector<GameRecall*> gameList){
         writeLine(fd, str2);
         count++;
     }
+}
+
+
+void System::observe(int fd, char*buf,vector<GameRecall*> &gameList){
+    User* user = findUserFd(fd);
+    if (gameList.size()==0) {
+        writeLine(fd, "There is no current game");
+        return;
+    }
+    char* token = strtok(buf, " ");
+    token = strtok(NULL, " ");
+    if (token == NULL) {
+        writeLine(fd,"Please enter observe <game_num>");
+        return;
+    }
+    int game_num = stoi(token);
+    if (int(gameList.size())<=game_num){
+        writeLine(fd,"Invalid game_num");
+        return;
+    }
+    user->obGameID.push_back(gameList[game_num]->gameID);
+    gameList[game_num]->observers.push_back(user);
+    writeLine(fd, gameList[game_num]->getBoardAsString());
+    
+}
+
+
+void System::unobserve(int fd, char*buf,vector<GameRecall*> &gameList){
+    User* user = findUserFd(fd);
+    if (user->obGameID.size()==0) {
+        writeLine(fd, "There is no observed game");
+        return;
+    }
+    char* token = strtok(buf, " ");
+    token = strtok(NULL, " ");
+    if (token == NULL) {
+        writeLine(fd,"Please enter unobserve <game_num>");
+        return;
+    }
+    int game_num = stoi(token);
+    if (game_num >= 0 && game_num <= int(user->obGameID.size())) {
+        auto it = find(gameList[game_num]->observers.begin(), gameList[game_num]->observers.end(), user);
+        if (it != gameList[game_num]->observers.end()){
+            gameList[game_num]->observers.erase(it);
+            user->obGameID.erase(user->obGameID.begin() + game_num);
+            writeLine(fd,"Unobserved game "+to_string(game_num));
+            return;
+        }
+    }
+    writeLine(fd,"Invalid number");
+    
 }

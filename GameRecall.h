@@ -24,6 +24,7 @@ public:
     std::chrono::seconds player1TimeLeft{600};
     std::chrono::seconds player2TimeLeft{600};
     int move_step;
+    std::vector<User*> observers;
 
     // Constructor
     GameRecall(User* player1, User* player2, int id);
@@ -58,6 +59,7 @@ public:
     bool isDraw() const;
     void startTurn();
     User* endTurn();
+    void playOB();
     void endGame(int mod);
 };
 

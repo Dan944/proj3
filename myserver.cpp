@@ -18,7 +18,6 @@
 #include <cctype>
 #include "User.h"
 #include "System.h"
-#include "ChatInfo.h"
 #include "Request.h"
 // #include "GameList.h"
 #include "GameRecall.h"
@@ -378,6 +377,12 @@ void start_server(char* port) {
 					(strncmp(buf, "a", 1) == 0 || strncmp(buf, "b", 1) == 0 ||strncmp(buf, "c", 1) == 0)){
 					sys.match2(fd,buf,gameList,requestList);
 				}
+				else if (states[fd] == 3 && strncmp(buf, "observe", 7) == 0) {
+					sys.observe(fd,buf,gameList);
+                }
+				else if (states[fd] == 3 && strncmp(buf, "unobserve", 9) == 0) {
+					sys.unobserve(fd,buf,gameList);
+                }
 				// else if (states[fd] == 3 && (strncmp(buf, "kibitz", 5) == 0 || strncmp(buf, "?", 1) == 0 ) && 
 				// 	sys.findUserFd(fd)->getState() == User::InMatch) {
 				// 	sys.match1(fd,buf,gameList,requestList,req);

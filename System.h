@@ -11,7 +11,6 @@
 #include <chrono>
 #include <vector>
 #include <string>
-#include "ChatInfo.h"
 #include "Request.h"
 // #include "GameList.h"
 #include "GameRecall.h"
@@ -60,6 +59,8 @@ public:
     void match2(int fd, char*buf,vector<GameRecall*> &gameList,vector<Request*> &requestList);
     void game(int fd, char*buf,vector<GameRecall*> gameList);
     void kibitz(int fd, char*buf);
+    void observe(int fd, char*buf, vector<GameRecall*> &gameList);
+    void unobserve(int fd, char*buf, vector<GameRecall*> &gameList);
 
 
     // std::atomic<bool> keepRunning;
