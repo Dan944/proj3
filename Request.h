@@ -36,7 +36,7 @@ public:
     void setToUser(User* to) { toUser = to; }
     void setCurrentState(RequestState state) { currentState = state; }
 
-    static Request* isMatchUserFromUser(const std::vector<Request*>& requestList, User* matchUser);
+    static Request* isMatchUserFromUser(const std::vector<Request*>& requestList, User* matchUser, User* requestingUser);
 };
 
 #endif // REQUEST_H
