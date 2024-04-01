@@ -719,6 +719,7 @@ void System::match2(int fd, char* buf, vector<GameRecall*> &gameList,vector<Requ
                     if (it != gameList.end()) {
                         gameList.erase(it);
                     }
+                    saveUserData();
                 }
                 if (game_one->isDraw() == true){
                     game_one->endGame(0);
@@ -726,6 +727,7 @@ void System::match2(int fd, char* buf, vector<GameRecall*> &gameList,vector<Requ
                     if (it != gameList.end()) {
                         gameList.erase(it);
                     }
+                    saveUserData();
                 }
                 if (game_one->isGameOver == true){
                     printf("GameOver\n");
@@ -735,6 +737,7 @@ void System::match2(int fd, char* buf, vector<GameRecall*> &gameList,vector<Requ
                     if (it != gameList.end()) {
                         gameList.erase(it);
                     }
+                    saveUserData();
                 }
             } else {
                 writeLine(game_one->player1->getSockId(),"It's not Your turn.");
@@ -765,6 +768,7 @@ void System::match2(int fd, char* buf, vector<GameRecall*> &gameList,vector<Requ
                     if (it != gameList.end()) {
                         gameList.erase(it);
                     }
+                    saveUserData();
                 }
 
                 if (game_one->isDraw() == true){
@@ -773,6 +777,7 @@ void System::match2(int fd, char* buf, vector<GameRecall*> &gameList,vector<Requ
                     if (it != gameList.end()) {
                         gameList.erase(it);
                     }
+                    saveUserData();
                 }
                 if (game_one->isGameOver == true){
                     game_one->player1->setState(User::Idle);
@@ -781,6 +786,7 @@ void System::match2(int fd, char* buf, vector<GameRecall*> &gameList,vector<Requ
                     if (it != gameList.end()) {
                         gameList.erase(it);
                     }
+                    saveUserData();
                 }
             } else { 
                 writeLine(game_one->player2->getSockId(),"It's not Your turn.");
