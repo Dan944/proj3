@@ -24,10 +24,10 @@
   mail \<id> \<title>\
   readmail \<msg_num>\
   listmail\
+  game\
   deletemail \<msg_num>
 
 ## 未完成
-  game\
   observe \<game_num>\
   unobserve\
   match \<name> \<b|w> [t]\
