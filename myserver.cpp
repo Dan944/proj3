@@ -106,6 +106,21 @@ void login(int rec_sock, string username, string password) {
 			user->sockId = rec_sock;
 			states[rec_sock] = 3;
 		}
+
+		bool hasUnreadEmails = false;
+		for (Email* currentEmail : user->emails) {
+			if (!currentEmail->read) { // Check for unread emails
+				hasUnreadEmails = true;
+				break; // Exit the loop as soon as an unread email is found
+			}
+		}
+		
+		if (hasUnreadEmails) {
+			sys.writeLine(rec_sock, "You have new mail!"); // Notify the user about unread emails
+		} else {
+			sys.writeLine(rec_sock, "You have no new mail."); // Optionally, inform them they have no new mail
+		}
+				
 	} else {
 		writeLine(rec_sock, "Incorrect password");
 		cout << "user.password = "<<user->password<<endl;
@@ -383,9 +398,28 @@ void start_server(char* port) {
 				else if (states[fd] == 3 && strncmp(buf, "unobserve", 9) == 0) {
 					sys.unobserve(fd,buf,gameList);
                 }
+				else if(states[fd] == 3 && sys.findUserFd(fd)->getState() == User::InMatch && (strncmp(buf, "refresh", 7) == 0)){
+					sys.Refresh(fd,gameList);
+				} 
+				else if(states[fd] == 3 && sys.findUserFd(fd)->getState() == User::Observation && (strncmp(buf, "refresh", 7) == 0)){
+					sys.Refresh(fd,gameList);
+				} 
+				else if(states[fd] == 3 && sys.findUserFd(fd)->getState() == User::InMatch && (strncmp(buf, "resign", 6) == 0)){
+					sys.admitDefeat(fd,gameList);
+				}
 				else if (states[fd] == 3 && (strncmp(buf, "kibitz", 6) == 0 || strncmp(buf, "'", 1) == 0 )) {
 					sys.kibitz(fd,buf,gameList);
-                }
+				}
+				else
+				{
+					sys.writeLine(fd,"Command not supoort");
+				}
+				
+				
+				// else if (states[fd] == 3 && (strncmp(buf, "kibitz", 5) == 0 || strncmp(buf, "?", 1) == 0 ) && 
+				// 	sys.findUserFd(fd)->getState() == User::InMatch) {
+				// 	sys.match1(fd,buf,gameList,requestList,req);
+                // }
 				if (states[fd]==3){
 					User *user = sys.findUserFd(fd);
 					user->writef("");

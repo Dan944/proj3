@@ -20,7 +20,7 @@ public:
     std::time_t* end_Time;
     float checkerboard[3][3]; // Board for the game, assuming it's a game like tic-tac-toe
     std::chrono::steady_clock::time_point currentTurnTime;
-    std::chrono::seconds timeLimit{600}; // 600 seconds = 10 minutes
+    std::chrono::steady_clock::time_point endTurnTime;
     std::chrono::seconds player1TimeLeft{600};
     std::chrono::seconds player2TimeLeft{600};
     int move_step;
@@ -46,6 +46,9 @@ public:
         end_Time = other.end_Time;
         gameID = other.gameID;
         checkerboard[3][3] = other.checkerboard[3][3];
+        currentTurnTime = other.currentTurnTime;
+        player1TimeLeft = other.player1TimeLeft;
+        player2TimeLeft = other.player2TimeLeft;
     }
 
     bool addMove(int player, const std::string& move);
@@ -58,9 +61,15 @@ public:
     GameRecall* startGame(User* player1, User* player2);
     bool isDraw() const;
     void startTurn();
-    User* endTurn();
-    void playOB();
+    void endTurn();
     void endGame(int mod);
+    void wrtel(int socketId, const std::string line);
+    void playOB();
+
+    std::chrono::seconds getPlayer1TimeLeft() const;
+    void setPlayer1TimeLeft(const std::chrono::seconds& time);
+    std::chrono::seconds getPlayer2TimeLeft() const;
+    void setPlayer2TimeLeft(const std::chrono::seconds& time); 
 };
 
 #endif // GAMERECALL_H

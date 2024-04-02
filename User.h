@@ -20,6 +20,7 @@ public:
         AwaitingMatch,
         MatchAcceptance, // The state we're focused on
         InMatch,
+        Observation,
         // Add other states as needed
     };
 

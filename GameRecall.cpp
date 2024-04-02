@@ -1,4 +1,5 @@
 #include "GameRecall.h"
+#include "User.h"
 #include "System.h"
 #include <chrono>
 #include <unistd.h>
@@ -6,7 +7,6 @@
 #include <cctype>
 #include <vector>
 #include <string>
-
 GameRecall::GameRecall()
 {
 
@@ -22,7 +22,6 @@ GameRecall::GameRecall(User* player1, User* player2, int id)
     start_Time = new std::time_t(std::time(nullptr)); // Initialize start time to now
     end_Time = nullptr; 
     std::memset(checkerboard, 0, sizeof(checkerboard));
-    move_step = 0;
 }
 
 bool GameRecall::addMove(int player, const std::string& move) {
@@ -39,7 +38,7 @@ bool GameRecall::addMove(int player, const std::string& move) {
         // Additional check if the position is already taken
         if (checkerboard[row][col] == 0) {
             checkerboard[row][col] = player; // Player 1 or 2
-            // endTurn();
+            endTurn();
             move_step++;
             currentPlayer = !currentPlayer; // Switch turn
             return true;
@@ -51,6 +50,48 @@ bool GameRecall::addMove(int player, const std::string& move) {
     }
 
     return false;
+}
+
+void GameRecall::wrtel(int socketId, const std::string line) {
+    std::string temp = line + '\n';
+    write(socketId, temp.c_str(), temp.size());
+}
+
+void GameRecall::endGame(int mod) {
+    System sys;
+    if (mod == 0){
+        wrtel(player1->getSockId(), "It's a draw.");
+        wrtel(player2->getSockId(), "It's a draw.");
+        player2->writef("");
+        isGameOver = true;
+    }
+    else if (mod == 1){
+        wrtel(player1->getSockId(), "You win!");
+        player1->win1();
+        wrtel(player2->getSockId(), "You lose.");
+        player2->loss1();
+        player2->writef("");
+        isGameOver = true;
+    }
+    else if (mod == 2){
+        wrtel(player2->getSockId(), "You win!");
+        player2->win1();
+        wrtel(player1->getSockId(), "You lose.");
+        player1->loss1();
+        player1->writef("");
+        isGameOver = true;
+    }
+    playOB();
+    for ( User* user :observers)
+    {
+        auto it = std::find(user->obGameID.begin(), user->obGameID.end(), gameID);
+        if (it != user->obGameID.end()) {
+            sys.writeLine(user->getSockId(),"Observer Over!");
+            user->setState(User::Idle);
+            user->obGameID.erase(it); // Correctly erase gameID from user->obGameID
+        }
+    }
+    
 }
 
 // Print the checkercheckerboard
@@ -103,6 +144,8 @@ bool GameRecall::isWin(int bw) {
 
 std::string GameRecall::getBoardAsString() const {
     std::ostringstream boardStr;
+    boardStr << "\nBlack: " << this->player1->getUsername() << "                      " <<"white: " << this->player2->getUsername();
+    boardStr << "\nP1 left: " << player1TimeLeft.count() << "s" << "                " <<"P2 left: " << player2TimeLeft.count() << "s" << "\n";
 
     // Print the column headers
     boardStr << "  1 2 3\n";
@@ -117,6 +160,7 @@ std::string GameRecall::getBoardAsString() const {
         }
         boardStr << "\n"; // Use "\n" instead of std::endl to avoid flushing the buffer
     }
+    
 
     return boardStr.str();
 }
@@ -133,176 +177,17 @@ bool GameRecall::isDraw() const {
 
     return true;
 }
-void wrtel(int socketId, const std::string line) {
-    std::string temp = line + '\n';
-    write(socketId, temp.c_str(), temp.size());
-}
-
-void GameRecall::endGame(int mod) {
-    if (mod == 0){
-        wrtel(player1->getSockId(), "It's a draw.");
-        wrtel(player2->getSockId(), "It's a draw.");
-        player2->writef("");
-        isGameOver = true;
-    }
-    else if (mod == 1){
-        wrtel(player1->getSockId(), "You win!");
-        player1->win1();
-        wrtel(player2->getSockId(), "You lose.");
-        player2->loss1();
-        player2->writef("");
-        isGameOver = true;
-    }
-    else if (mod == 2){
-        wrtel(player2->getSockId(), "You win!");
-        player2->win1();
-        wrtel(player1->getSockId(), "You lose.");
-        player1->loss1();
-        player1->writef("");
-        isGameOver = true;
-    }
-    playOB();
-    for ( User* user :observers)
-    {
-        auto it = std::find(user->obGameID.begin(), user->obGameID.end(), gameID);
-        if (it != user->obGameID.end()) {
-            user->obGameID.erase(it); // Correctly erase gameID from user->obGameID
-        }
-    }
-    
-}
-
-void GameRecall::playOB() {
-    for(User* user : observers){
-        if (user->login == false){
-            continue;
-        }
-        wrtel(user->sockId,"");
-        wrtel(user->sockId,getBoardAsString());
-        user->writef("");
-    }
-}
-
-// void GameRecall::manageGame(int fd, GameRecall *game) {
-//     printf("Manage Game Start!\n");
-//     System sys;
-//     bool gameover = false;
-//     std::string moveCommand;
-//     int c_Player = 1;
-//     sys.writeLine(game->player1->getSockId(),"You go first\n");
-//     sys.writeLine(game->player2->getSockId(),"You go next\n");
-//     printf("cPlayer is %d\n",c_Player);
-//     std::cout << "currentPlayer is : " << currentPlayer << endl;
-    
-//     while (!isGameOver) {
-//         int currentPlayerSockId = game->player1->getSockId();
-        
-//         // Request a move from the current player
-//         std::cout << "currentPlayerSockId is : " << currentPlayerSockId << endl;
-//         std::string boardState = getBoardAsString();
-//         sys.writeLine(game->player1->getSockId(),boardState);
-//         sys.writeLine(game->player2->getSockId(),boardState);
-//         if (currentPlayer == 0){
-//             sys.writeLine(game->player2->getSockId(),"Wait for your turn.");
-//             sys.writeLine(game->player1->getSockId(),"It's your turn.");
-//             moveCommand = sys.readLine(game->player1->getSockId());
-//             sys.rtrim(moveCommand);
-//         } else {
-//             sys.writeLine(game->player1->getSockId(),"Wait for your turn.");
-//             sys.writeLine(game->player2->getSockId(),"It's your turn.");
-//             moveCommand = sys.readLine(game->player2->getSockId());
-//             sys.rtrim(moveCommand);
-//         }
-
-//         // Try to add the move
-//         if (addMove(c_Player, moveCommand)) {
-//             // Successfully added the move. Send updated board to both players.
-//             printf("addmove successful\n");
-//             std::string boardState = getBoardAsString();
-//             sys.writeLine(game->player1->getSockId(), boardState);
-//             sys.writeLine(game->player2->getSockId(), boardState);
-            
-//             // Check for win/draw condition
-//             if (isWin(currentPlayer ? 1 : 2)) {
-//                 sys.writeLine(currentPlayerSockId, "You win!");
-//                 sys.writeLine(currentPlayer ? game->player2->getSockId() : game->player1->getSockId(), "You lose.");
-//                 gameover = true;
-//             }
-
-//             if (isDraw() == true){
-//                 sys.writeLine(game->player1->getSockId(), "It's a draw.");
-//                 sys.writeLine(game->player2->getSockId(), "It's a draw.");
-//                 break;
-//             }
-            
-//             // Here, add logic to check for a draw if necessary.
-
-//             if (gameover) {
-//                 isGameOver = true;
-//                 break;
-//             }
-            
-//             // Switch turns
-//             game->currentPlayer = !game->currentPlayer;
-//             if(c_Player == 1){
-//                 c_Player = 2;
-//             } else {
-//                 c_Player = 1;
-//             }
-//             printf("cPlayer is %d\n",c_Player);
-//             std::cout << "currentPlayer is : " << currentPlayer << endl;
-//         } else {
-//             // Invalid move. Inform the current player.
-//             sys.writeLine(currentPlayerSockId, "Invalid move. Please try again.");
-//         }
-//     }
-// }
-
-// void GameRecall::handleMatchRequest(int fd, User* matchUser, User* requestingUser) {
-//     System sys;
-//     std::string answer = sys.readLine(fd);
-//     sys.rtrim(answer);
-
-//     if (answer == "yes") {
-//         // Assuming we have function to initialize GameRecall with both players
-//         GameRecall* game = startGame(matchUser, requestingUser);
-//         std::cout << "handle Player1 is : " << game->player1->getSockId() << endl;
-//         std::cout << "handle Player2 is : " << game->player2->getSockId() << endl;
-//         manageGame(fd, game);
-//     } else if (answer == "no") {
-//         sys.writeLine(fd, "User refused your request.");
-//     }
-// }
-
-// GameRecall* GameRecall::handleMatchRequest(int fd, User* matchUser, User* requestingUser, int gameID) {
-//     System sys;
-//     std::string answer = sys.readLine(fd);
-//     sys.rtrim(answer);
-
-//     if (answer == "yes") {
-//         // Assuming we have function to initialize GameRecall with both players
-//         GameRecall *game = new GameRecall(matchUser, requestingUser, gameID);
-//         game->player1->setCurrentGameID(gameID);
-//         game->player2->setCurrentGameID(gameID);
-//         sys.writeLine(game->player1->getSockId(),"You go first\n");
-//         sys.writeLine(game->player2->getSockId(),"You go next\n");
-//         return game;
-//     } else if (answer == "no") {
-//         sys.writeLine(fd, "User refused your request.");
-//     }
-
-//     return nullptr;
-// }
 
 GameRecall* GameRecall::handleMatchRequest(int fd, User* matchUser, User* requestingUser, int gameID) {
     System sys;
     // Assuming we have function to initialize GameRecall with both players
+    
     GameRecall *game = new GameRecall(matchUser, requestingUser, gameID);
+    game->startTurn();
     game->player1->setCurrentGameID(gameID);
     game->player2->setCurrentGameID(gameID);
-    // startTurn(game);
-    sys.writeLine(game->player1->getSockId(),"You go first\n");
-    sys.writeLine(game->player2->getSockId(),"You go next\n");
+    player1 = matchUser;
+    player2 = requestingUser;
     return game;
 }
 
@@ -316,35 +201,70 @@ GameRecall* GameRecall::startGame(User* player1, User* player2) {
     return game;
 }
 
-// void GameRecall::startTurn() {
-//     startTurnTime = std::chrono::steady_clock::now();
-// }
+void GameRecall::startTurn() {
+    currentTurnTime = std::chrono::steady_clock::now();
+}
 
-// void GameRecall::endTurn() {
-//     auto endTurnTime = std::chrono::steady_clock::now();
-//     auto elapsed = std::chrono::duration_cast<std::chrono::seconds>(endTurnTime - startTurnTime);
+void GameRecall::endTurn() {
+    System sys;
+    endTurnTime = std::chrono::steady_clock::now();
+    auto elapsed = std::chrono::duration_cast<std::chrono::seconds>(endTurnTime - currentTurnTime);
+    std::cout << "elapsed time: " << elapsed.count() << " seconds\n";
 
-//     // Deduct elapsed time from the current player's remaining time
-//     if (!currentPlayer) {
-//         player1TimeLeft -= elapsed;
-//         if (player1TimeLeft.count() <= 0) {
-//             // Player 1 has run out of time
-//             declareWinner(player2);
-//             return;
-//         }
-//     } else {
-//         player2TimeLeft -= elapsed;
-//         if (player2TimeLeft.count() <= 0) {
-//             // Player 2 has run out of time
-//             declareWinner(player1);
-//             return;
-//         }
-//     }
+    // Deduct elapsed time from the current player's remaining time
+    if (!currentPlayer) {
+        std::cout << "Player1's remaining time before: " << player1TimeLeft.count() << " seconds\n";
+        player1TimeLeft -= elapsed;
+        std::cout << "Player1's remaining time after: " << player1TimeLeft.count() << " seconds\n";
+        if (player1TimeLeft.count() <= 0) {
+            sys.writeLine(player1->getSockId(),"Game timeout! You lose.");
+            sys.writeLine(player2->getSockId(),"You win!");
+            player1->setState(User::Idle);
+			player2->setState(User::Idle);
+            return;
+        }
+    } else {
+        player2TimeLeft -= elapsed;
+        if (player2TimeLeft.count() <= 0) {
+            std::cout << "Player2's remaining time: " << player2TimeLeft.count() << " seconds\n";
+            // Player 2 has run out of time
+            sys.writeLine(player2->getSockId(),"Game timeout! You lose.");
+            sys.writeLine(player1->getSockId(),"You win!");
+            player1->setState(User::Idle);
+			player2->setState(User::Idle);
+            return;
+        }
+    }
 
-//     startTurn();
-// }
+    startTurn();
+}
 
-// void GameRecall::declareWinner(User* winner){
-//     isGameOver = true;
-    
-// }
+void GameRecall::playOB() {
+    for(User* user : observers){
+        if (user->login == false){
+            continue;
+        }
+        wrtel(user->sockId,"");
+        wrtel(user->sockId,getBoardAsString());
+        user->writef("");
+    }
+}
+
+std::chrono::seconds GameRecall::getPlayer1TimeLeft() const {
+    return player1TimeLeft;
+}
+
+// Setter for player1TimeLeft
+void GameRecall::setPlayer1TimeLeft(const std::chrono::seconds& time) {
+    player1TimeLeft = time;
+}
+
+// Getter for player2TimeLeft
+std::chrono::seconds GameRecall::getPlayer2TimeLeft() const {
+    return player2TimeLeft;
+}
+
+// Setter for player2TimeLeft
+void GameRecall::setPlayer2TimeLeft(const std::chrono::seconds& time) {
+    player2TimeLeft = time;
+}

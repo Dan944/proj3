@@ -11,12 +11,13 @@
 #include <algorithm>
 #include <cctype>
 #include <vector>
-#include <string>
 #include "Request.h"
 // #include "GameList.h"
 #include "GameRecall.h"
+#include <filesystem>
 
 using namespace std;
+namespace fs = std::filesystem;
 // Gets all usernames from the system's user list
 std::vector<std::string> System::getAllUsers() {
     std::vector<std::string> usernames;
@@ -283,7 +284,9 @@ void System::info(int fd, char* buf){
         if (msg != NULL) {
             *msg = '\0';
         }
-        user->information = token;
+        string info_content = token;
+        rtrim(info_content);
+        user->information = info_content;
         saveUserData();
     }
     else {
@@ -324,7 +327,7 @@ void System::shout(int fd, char* buf) {
         User *user = findUserFd(fd);
         sprintf(msg,"!shout! *%s*: %s", user->username.c_str(), token);
         for (User* u : onlineUsers) {
-            if (u->quiet==false && find(u->blocked_names.begin(), u->blocked_names.end(), user->username) == u->blocked_names.end()) {
+            if (u->quiet==false) {
                 writeLine(u->sockId,string(msg));
             }
         }
@@ -414,7 +417,7 @@ void System::tell(int fd, char* buf){
         return;
     }
     char* msg = name + strlen(name) + 1;
-    string outmsg = string(msg);
+    string outmsg = user->getUsername() + ": " + string(msg); // Prepend the username
     rtrim(outmsg);
     writeLine(duser->sockId, outmsg);
 }
@@ -552,32 +555,54 @@ void System::delete_mail(int fd, char* buf){
     }
 }
 
-void System::saveMailData(){
+void ensureDirectoryExists(const std::string& path) {
+    fs::path dirPath{path};
+    if (!fs::exists(dirPath)) {
+        // Create the directory if it does not exist
+        if (fs::create_directories(dirPath)) {
+            std::cout << "Created directory: " << path << std::endl;
+        } else {
+            std::cerr << "Failed to create directory: " << path << std::endl;
+        }
+    }
+}
+
+void System::saveMailData() {
     string rootPath = "data/mails/";
+    ensureDirectoryExists(rootPath);
     for (auto& user : allUsers) {
-        if (user->emails.size()==0) {
+        // Skip saving for users without emails
+        if (user->emails.size() == 0) {
             continue;
-        }
-        string filePath=rootPath+user->username;
-        ofstream outFile(filePath, ofstream::trunc);
-        if (!outFile.is_open()) {
-            std::cerr << "Failed to open file for writing: " << filePath << endl;
-            continue;
-        }
-        for (auto& email : user->emails){
-            rtrim(email->content);
-            outFile << email->tittle << endl
-                    << email->send_name << endl
-                    << email->rec_name << endl
-                    << string(ctime(&(email->send_time)))
-                    << string(email->read ? "Read" : "New") << endl
-                    << email->content <<endl<< "." <<endl;
         }
 
-        outFile.close();
-        cout << "Email data saved successfully." << endl;
+        string filePath = rootPath + user->username;
+        // Open file for output in append mode
+        ofstream outFile(filePath, ios::out);
+
+        if (!outFile.is_open()) {
+            cerr << "Failed to open file for writing: " << filePath << endl;
+            continue;
+        } else {
+            for (auto& email : user->emails) {
+                // Ensure email content does not have trailing spaces
+                rtrim(email->content);
+                // Write email data to the file
+                outFile << email->tittle << endl
+                        << email->send_name << endl
+                        << email->rec_name << endl
+                        << string(ctime(&(email->send_time)))
+                        << string(email->read ? "Read" : "New") << endl
+                        << email->content << endl << "." << endl;
+            }
+
+            outFile.close();
+            cout << "Email data saved successfully for user: " << user->username << endl;
         }
+    }
 }
+
+
 void System::load_mail(){
     string rootPath = "data/mails/";
     for (auto& user : allUsers) {
@@ -617,9 +642,6 @@ void System::load_mail(){
 }
 
 void System::match1(int fd, char* buf,vector<GameRecall*> &gameList,vector<Request*> &requestList,Request req){
-    // std::string command(buf);
-    // size_t start = command.find('<');
-    // size_t end = command.find('>');
     char* token = strtok(buf, " ");
     token = strtok(NULL, " ");
 
@@ -646,42 +668,86 @@ void System::match1(int fd, char* buf,vector<GameRecall*> &gameList,vector<Reque
                     cout<<matchUser->username<<","<<request->fromUser->username<<endl;
                 }
                 if (r_quest != nullptr) {
-                    printf("r_quest is not nullptr!!!!\n");
-                    requestingUser = r_quest->getFromUser();
-                    matchUser = r_quest->getToUser();
-                    std::cout << "From User : " << requestingUser->getUsername() << endl;
-                    std::cout << "To User : " << matchUser->getUsername() << endl;
-                    int matchUserID = matchUser->getSockId();
-                    GameRecall *gr = new GameRecall();
-                    matchUser->setState(User::InMatch);
-                    requestingUser->setState(User::InMatch);
-                    int g_id = gameList.size() + 1;
-                    GameRecall *game_one = gr->handleMatchRequest(matchUserID, matchUser, requestingUser, g_id);
-                    gameList.push_back(game_one);
-                    auto it = std::find(requestList.begin(), requestList.end(), r_quest);
-                    if (it != requestList.end()) {
-                        // Delete the request object to avoid memory leak
-                        delete *it; 
-                        // Erase the pointer from the vector
-                        requestList.erase(it);
+                    token = strtok(NULL, " "); // Extracts "first/next"
+                    string turnOrder = (token != NULL) ? token : "";
+                    if (!turnOrder.empty()) {
+                        writeLine(fd,"Invalid answer. You can only type match <username>");
+                    } else {
+                        requestingUser = r_quest->getFromUser();
+                        matchUser = r_quest->getToUser();
+                        std::cout << "From User : " << requestingUser->getUsername() << endl;
+                        std::cout << "To User : " << matchUser->getUsername() << endl;
+                        int matchUserID = matchUser->getSockId();
+                        GameRecall *gr = new GameRecall();
+                        matchUser->setState(User::InMatch);
+                        requestingUser->setState(User::InMatch);
+                        int g_id = gameList.size() + 1;
+                        GameRecall *game_one;
+                        //black go first, white go next
+                        if (r_quest->getInitiative() == 1) {
+                            game_one = gr->handleMatchRequest(matchUserID, requestingUser, matchUser, g_id);
+                        } else if(r_quest->getInitiative() == 2){
+                            game_one = gr->handleMatchRequest(matchUserID, matchUser, requestingUser, g_id);
+                        } else {
+                            printf("Something wornmg\n");
+                        }
+                        game_one->setPlayer1TimeLeft(std::chrono::seconds(r_quest->getStepTime()));
+                        game_one->setPlayer2TimeLeft(std::chrono::seconds(r_quest->getStepTime()));
+                        gameList.push_back(game_one);
+                        auto it = std::find(requestList.begin(), requestList.end(), r_quest);
+                        if (it != requestList.end()) {
+                            // Delete the request object to avoid memory leak
+                            delete *it; 
+                            // Erase the pointer from the vector
+                            requestList.erase(it);
+                        }
+                        std::string boardState = game_one->getBoardAsString();
+                        cout << "boardState: " << boardState << endl;
+                        writeLine(game_one->player1->getSockId(),boardState);
+                        writeLine(game_one->player2->getSockId(),boardState);
+                        writeLine(game_one->player1->getSockId(),"You are initiative");
+                        writeLine(game_one->player2->getSockId(),"You are gote");
                     }
-                    std::string boardState = gr->getBoardAsString();
-                    writeLine(game_one->player1->getSockId(),boardState);
-                    writeLine(game_one->player2->getSockId(),boardState);
-                    game_one->player2->writef("");
                 } else {
-                    printf("r_quest is nullptr!!!!");
-                    writeLine(fd, "Your requirement has been sent.");
-                    std::string matchRequest = "Match request from " + requestingUser->getUsername();
-                    int matchUserID = matchUser->getSockId();
-                    writeLine(matchUserID, matchRequest);
-                    matchUser->writef("");
-                    Request *rq = new Request(requestingUser,matchUser,Request::RequestGenerated);
-                    requestList.push_back(rq);
+                    token = strtok(NULL, " "); // Extracts "first/next"
+                    string turnOrder = (token != NULL) ? token : "";
+                    if (turnOrder != "w" && turnOrder != "b" && !turnOrder.empty()) {
+                        writeLine(fd,"Invalid turn order. Must be 'w(next)' or 'b(first)'.");
+                    } else {
+                        token = strtok(NULL, " "); // Extracts "time"
+                        std::string timeLimitStr = (token != NULL) ? token : "";
+                        if (timeLimitStr.empty()) {
+                            timeLimitStr = "600"; // Set default time limit
+                        }
+                        try{
+                            int timeLimit = std::stoi(timeLimitStr);
+                            cout << "Time Limit (Int): " << timeLimit << endl;
+                            
+                            writeLine(fd, "Your requirement has been sent.");
+                            std::string matchRequest = "Match request from " + requestingUser->getUsername();
+                            int matchUserID = matchUser->getSockId();
+                            writeLine(matchUserID, matchRequest);
+                            matchUser->writef("");
+                            Request *rq;
+                            if (turnOrder == "b") {
+                                rq = new Request(requestingUser,matchUser,Request::RequestGenerated, 1, timeLimit);
+                                std::cout << "go turnOrder b "<< endl;
+                            } else if(turnOrder == "w"){
+                                rq = new Request(requestingUser,matchUser,Request::RequestGenerated, 2, timeLimit);
+                                std::cout << "go turnOrder c "<< endl;
+                            } else {
+                                rq = new Request(requestingUser,matchUser,Request::RequestGenerated, 1, timeLimit);
+                                std::cout << "go turnOrder default "<< endl;
+                            }
+                            requestList.push_back(rq);
+                        } catch (const std::invalid_argument& e) {
+                            writeLine(fd, "Invalid time limit. Must be an integer.");
+                        }
+                    }
+                    }
+                } else {
+                    writeLine(fd, "The User is offline.");
                 }
-            } else {
-                writeLine(fd, "The User is offline.");
-            }
         }
     } else {
         writeLine(fd, "Invalid command format. Use 'match <username>'.");
@@ -700,10 +766,10 @@ void System::match2(int fd, char* buf, vector<GameRecall*> &gameList,vector<Requ
                 if (game_one->addMove(1,bufStr)) {
                     std::string boardState = game_one->getBoardAsString();
                     writeLine(game_one->player2->getSockId(),"");
-                    writeLine(game_one->player1->getSockId(),"Wait for your turn.");
-                    writeLine(game_one->player2->getSockId(),"It's your turn.");
                     writeLine(game_one->player1->getSockId(),boardState);
                     writeLine(game_one->player2->getSockId(),boardState);
+                    writeLine(game_one->player1->getSockId(),"Wait for your turn.");
+                    writeLine(game_one->player2->getSockId(),"It's your turn.");
                     game_one->playOB();
                     game_one->player2->writef("");
                 } else {
@@ -750,10 +816,10 @@ void System::match2(int fd, char* buf, vector<GameRecall*> &gameList,vector<Requ
                 if (game_one->addMove(2,bufStr)){
                     std::string boardState = game_one->getBoardAsString();
                     writeLine(game_one->player1->getSockId(),"");
-                    writeLine(game_one->player1->getSockId(),"It's your turn.");
-                    writeLine(game_one->player2->getSockId(),"Wait for your turn.");
                     writeLine(game_one->player1->getSockId(),boardState);
                     writeLine(game_one->player2->getSockId(),boardState);
+                    writeLine(game_one->player1->getSockId(),"It's your turn.");
+                    writeLine(game_one->player2->getSockId(),"Wait for your turn.");
                     game_one->playOB();
                     game_one->player1->writef("");
                 } else {
@@ -811,7 +877,6 @@ void System::game(int fd, char*buf,vector<GameRecall*> gameList){
     }
 }
 
-
 void System::observe(int fd, char*buf,vector<GameRecall*> &gameList){
     User* user = findUserFd(fd);
     if (gameList.size()==0) {
@@ -829,10 +894,10 @@ void System::observe(int fd, char*buf,vector<GameRecall*> &gameList){
         writeLine(fd,"Invalid game_num");
         return;
     }
+    user->setState(User::Observation);
     user->obGameID.push_back(gameList[game_num]->gameID);
     gameList[game_num]->observers.push_back(user);
     writeLine(fd, gameList[game_num]->getBoardAsString());
-    
 }
 
 
@@ -853,12 +918,82 @@ void System::unobserve(int fd, char*buf,vector<GameRecall*> &gameList){
         if (it != gameList[game_num]->observers.end()){
             gameList[game_num]->observers.erase(it);
             user->obGameID.erase(user->obGameID.begin() + game_num);
+            user->setState(User::Idle);
             writeLine(fd,"Unobserved game "+to_string(game_num));
             return;
         }
     }
     writeLine(fd,"Invalid number");
-    
+}
+
+void System::Refresh(int fd, vector<GameRecall*> &gameList){
+    User* user = findUserFd(fd);
+    GameRecall* targetgame = nullptr;
+    for (GameRecall* game : gameList) {
+        if (game->player1 == user || game->player2 == user) {
+            targetgame = game;
+        }
+    }
+    if (targetgame != nullptr){
+        writeLine(fd,targetgame->getBoardAsString());
+    }
+
+    printf("targetgame is empty now\n");
+    for (int gameID : user->obGameID) {
+        std::cerr << "user is:" << user->getUsername() << std::endl;
+        std::cerr << "gameID is:" << gameID << std::endl;
+        std::cerr << "obGameID is:" << user->obGameID.size() << std::endl;
+        targetgame = gameList[gameID-1];
+        std::cerr << "targetGame is:" << targetgame->gameID << std::endl;
+        for (User* obuser : targetgame->observers) {
+            writeLine(obuser->getSockId(),targetgame->getBoardAsString());
+        }
+        printf("something is wrong");
+    }
+}
+
+void System::admitDefeat(int fd, vector<GameRecall*> &gameList){
+    User* user = findUserFd(fd);
+    GameRecall* targetGame = nullptr;
+    for (GameRecall* game : gameList) {
+        if (game->player1 == user || game->player2 == user) {
+            targetGame = game;
+        }
+    }
+
+    if (targetGame != nullptr){
+        int losingPlayerMod = (targetGame->player1 == user) ? 1 : 2;
+        printf("losing is %d\n", losingPlayerMod);
+        targetGame->endGame(losingPlayerMod);
+        std::cerr << "player1 is." << targetGame->player1->getUsername() << std::endl;
+        std::cerr << "player2 is." << targetGame->player2->getUsername() << std::endl;
+
+        // Notify both players of the game's end
+        std::string boardState = targetGame->getBoardAsString();
+        writeLine(targetGame->player1->getSockId(), boardState);
+        writeLine(targetGame->player2->getSockId(), boardState);
+        if(losingPlayerMod == 1){
+            writeLine(targetGame->player1->getSockId(), "You have admitted defeat. You lose.");
+            writeLine(targetGame->player2->getSockId(), "Your opponent has admitted defeat. You win!");
+            targetGame->player2->writef("");
+        } else {
+            writeLine(targetGame->player2->getSockId(), "You have admitted defeat. You lose.");
+            writeLine(targetGame->player1->getSockId(), "Your opponent has admitted defeat. You win!");
+            targetGame->player1->writef("");
+        }
+
+        // Reset user states and remove the game from the game list
+        targetGame->player1->setState(User::Idle);
+        targetGame->player2->setState(User::Idle);
+        auto it = std::find(gameList.begin(), gameList.end(), targetGame);
+        if (it != gameList.end()) {
+            delete *it; // Deallocate memory to avoid memory leaks
+            gameList.erase(it); // Remove game from list
+        }
+    } else {
+        // If the user is not in any game, inform them
+        writeLine(fd, "You are not currently in a game.");
+    }
 }
 
 void System::kibitz(int fd, char*buf, vector<GameRecall*> &gameList){
